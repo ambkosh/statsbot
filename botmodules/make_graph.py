@@ -1,3 +1,8 @@
+import matplotlib
+matplotlib.use('Agg')
+
+from os import path
+
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
@@ -8,7 +13,7 @@ from botmodules.sqlconnect import make_connection, Submissions, Comments
 from botmodules.upload_image import upload_image
 import datetime
 
-
+directory = path.dirname(__file__)
 
 def time_graph(author, table, hash, session):
     """creates the time graph for given user
@@ -69,9 +74,9 @@ def time_graph(author, table, hash, session):
     plt2.set_ylabel('Number of comments\n per week')
 
 
-    plt.savefig('time_graph.png')
+    plt.savefig(directory + '/output/time_graph.png') 
 
-    return(upload_image('time_graph.png', "T"+hash)[0])
+    return(upload_image(directory + '/output/time_graph.png', "T"+hash)[0])
 
 
 
@@ -125,9 +130,9 @@ def flair_graph(author, table, hash, session):
 
     #plt.show()
 
-    plt.savefig('flair_graph.png')
+    plt.savefig(directory + '/output/flair_graph.png')
 
-    return(upload_image('flair_graph.png', "F"+hash)[0])
+    return(upload_image(directory + '/output/flair_graph.png', "F"+hash)[0])
 
 def total_distribution_graph(table, time, session):
 
