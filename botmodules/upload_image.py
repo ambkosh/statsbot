@@ -1,6 +1,6 @@
 import cloudinary
 import cloudinary.uploader
-from conf import cloudinary_conf
+from docs.conf import cloudinary_conf
 
 cloudinary.config(cloud_name = cloudinary_conf['cloud_name'],
   api_key = cloudinary_conf['api_key'],
