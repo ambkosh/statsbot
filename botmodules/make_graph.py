@@ -4,8 +4,8 @@ import numpy as np
 
 from sqlalchemy import func, text, cast, Time
 
-from sqlconnect import make_connection, Submissions, Comments
-from upload_image import upload_image
+from botmodules.sqlconnect import make_connection, Submissions, Comments
+from botmodules.upload_image import upload_image
 import datetime
 
 
