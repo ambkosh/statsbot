@@ -1,12 +1,12 @@
 #!/usr/bin/python3.6
 
 import praw, time, sys, hashlib
-from sqlconnect import make_connection, Submissions, Comments
+from botmodules.sqlconnect import make_connection, Submissions, Comments
 from sqlalchemy import func, and_, text, exc
 
-from make_graph import time_graph, flair_graph  # custom module to create the graphs
-from conf import prawconfig, connection_string, connection_string_bot  # custom module with praw config
-from sqlconnectbot import make_connection_bot, Calls, \
+from botmodules.make_graph import time_graph, flair_graph  # custom module to create the graphs
+from docs.conf import prawconfig, connection_string, connection_string_bot  # custom module with praw config
+from botmodules.sqlconnectbot import make_connection_bot, Calls, \
     Hashes  # custom module for connection to sql database with replied comments
 
 reddit = praw.Reddit(client_id=prawconfig['client_id'],
