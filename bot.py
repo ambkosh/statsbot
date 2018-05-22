@@ -28,15 +28,9 @@ date = '2015-5-1'
 class Sql_Results(object):
     """Basic Class for SQL results"""
 
-    def __init__(self, author, date, table):
+    def __init__(self, author, date):
         self.author = author
-        self.table = table
         self.date = date
-
-        if self.table == Submissions:
-            self.table_text = 'submissionslarge'
-        else:
-            self.table_text = 'comments'
 
     def get_author(self):
         return self.author
@@ -49,6 +43,20 @@ class Sql_Results(object):
 
     def set_table(self, table):
         self.table = table
+
+
+class Sql_User(Sql_Results):
+    """Basic Class for SQL results"""
+
+    def __init__(self, author, date, table):
+
+        super().__init__(author, date)
+        self.table = table
+
+        if self.table == Submissions:
+            self.table_text = 'submissionslarge'
+        else:
+            self.table_text = 'comments'
 
     def get_has_data(self, session):
         """returns true if user has rows in time frame"""
@@ -197,7 +205,7 @@ class Message_Data(object):
     def get_table(self):
         """Creates the table headings with reddit syntax"""
 
-        sql_results = Sql_Results(self.author, self.date, self.table)
+        sql_results = Sql_User(self.author, self.date, self.table)
 
         if not sql_results.get_has_data(session):
             return ('No Data')
@@ -231,7 +239,7 @@ class Message_Data(object):
         """format the link to the images. checks if has the same image was already created
         and if so returns the old link"""
 
-        hash = Sql_Results(self.author, self.date, self.table).get_hash()
+        hash = Sql_User(self.author, self.date, self.table).get_hash()
 
         hash_post = Hashes(md5=hash)
         session_bot.add(hash_post)  # tries to write has to table
@@ -265,7 +273,7 @@ class Message_Data(object):
         """Puts all the shit together"""
 
         last_update = self.get_small_text(header) + " " + self.get_small_text(
-            str(Sql_Results(self.author, self.table, self.date).get_update_date(session).date()))
+            str(Sql_User(self.author, self.table, self.date).get_update_date(session).date()))
         table_data = self.get_table()
         images_data = self.get_image_text()
         seperator = "\n\n-------\n\n"
@@ -325,7 +333,7 @@ while True:
                 except AttributeError:
                     print("Can't fetch author name. Probably deleted")
 
-                has_data = Sql_Results(author, date, table).get_has_data(session)
+                has_data = Sql_User(author, date, table).get_has_data(session)
 
                 if not has_data:
                     answer = ("No Data")

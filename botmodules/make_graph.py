@@ -1,7 +1,9 @@
-import matplotlib
-matplotlib.use('Agg')
+#!/usr/bin/python3.6
 
-from os import path
+import matplotlib
+#matplotlib.use('Agg')
+
+#from pathlib import Path as path
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -13,13 +15,13 @@ from botmodules.sqlconnect import make_connection, Submissions, Comments
 from botmodules.upload_image import upload_image
 import datetime
 
-directory = path.dirname(__file__)
 
 def time_graph(author, table, hash, session):
     """creates the time graph for given user
     Uploads the picture and returns the image link"""
 
     # data for activity per hour in a day
+
 
     result_day = session.query(func.date_part('hour', table.datum).label("time"), func.count(table.id).label("count"))\
         .filter(table.autor == author)\
@@ -73,17 +75,20 @@ def time_graph(author, table, hash, session):
     plt2.xaxis.set_minor_locator(weeks)
     plt2.set_ylabel('Number of comments\n per week')
 
+    #print(directory)
+    #outpath = str(directory) + "/output/time_graph.png"
+    #outpath.replace("\\","/")
+    #output_path = str(path.cwd().joinpath("output", "time_graph.png").absolute())
+    #print(output_path)
 
-    plt.savefig(directory + '/output/time_graph.png') 
-
-    return(upload_image(directory + '/output/time_graph.png', "T"+hash)[0])
+    plt.savefig("output/time_graph.png")
+    return(upload_image("output/time_graph.png", "T"+hash))
 
 
 
 def flair_graph(author, table, hash, session):
     """creates the flair graph for given user
     Uploads the picture and returns the image link"""
-
 
     if table == Comments:
         result = session.query(func.count(Comments.id).label("count"), Submissions.flair)\
@@ -129,10 +134,13 @@ def flair_graph(author, table, hash, session):
     ax.set_xticklabels(flairs, ha='right')
 
     #plt.show()
+    #outpath = str(directory) + "/output/flair_graph.png"
+    #outpath.replace("\\","/")
+    #output_path = str(path.cwd().joinpath("output", "flair_graph.png"))
+    #print("flair_graph.png")
 
-    plt.savefig(directory + '/output/flair_graph.png')
-
-    return(upload_image(directory + '/output/flair_graph.png', "F"+hash)[0])
+    plt.savefig("output/flair_graph.png")
+    return(upload_image("output/flair_graph.png", "F"+hash))
 
 def total_distribution_graph(table, time, session):
 
@@ -163,6 +171,3 @@ def total_distribution_graph(table, time, session):
     return(plt)
 
 
-
-#session = make_connection()
-#total_distribution_graph(Comments, '123', session)
