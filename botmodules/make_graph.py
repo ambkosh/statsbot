@@ -1,13 +1,10 @@
 #!/usr/bin/python3.6
 
 import matplotlib
-#matplotlib.use('Agg')
-
-#from pathlib import Path as path
+matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import numpy as np
 
 from sqlalchemy import func, text, cast, Time
 
