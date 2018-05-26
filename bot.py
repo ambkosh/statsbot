@@ -6,8 +6,8 @@ from sqlalchemy import func, and_, text, exc
 
 from botmodules.make_graph import time_graph, flair_graph  # custom module to create the graphs
 from docs.conf import prawconfig, connection_string, connection_string_bot  # custom module with praw config
-from botmodules.sqlconnectbot import make_connection_bot, Calls, \
-    Hashes  # custom module for connection to sql database with replied comments
+from botmodules.sqlconnectbot import make_connection_bot, Calls ,Hashes  # custom module for connection to sql database with replied comments
+from botmodules.sqlresults import Sql_Results
 
 reddit = praw.Reddit(client_id=prawconfig['client_id'],
                      client_secret=prawconfig['client_secret'],
@@ -20,204 +20,136 @@ rde = reddit.subreddit('rdebottest')
 session = make_connection(connection_string)
 session_bot = make_connection_bot(connection_string_bot)
 
-header = "Daten bis: "
 footer = "Bugs? Wünsche? Sonstiges Feedback? Schreib eine Nachricht an meinen Meister: [amb_kosh](https://www.reddit.com/message/compose/?to=amb_kosh)"
 date = '2015-5-1'
+last_update = ''
 
 
-class Sql_Results(object):
-    """Basic Class for SQL results"""
+class Check_Comment:
+    """Checks if Comment calls the bot, if Comment was already
+    replied to and if comments or submissions are requested"""
 
-    def __init__(self, author, date):
-        self.author = author
-        self.date = date
+    def __init__(self, body, commentid):
+        self.body = body
+        self.commentid = commentid
 
-    def get_author(self):
-        return self.author
+    def check_body(self):
+        if self.body.strip().lower() in ['!stats kommentare']:
+            print("found comment !stats kommentare")
+            return ({'scope': 'user', 'table': Comments, 'date': '2016-1-1'})
+        elif comment.body.strip().lower() in ['!stats posts']:
+            print("found comment !stats posts")
+            return ({'scope': 'user', 'table': Submissions, 'date': '2016-1-1'})
+        elif comment.body.strip().lower() in ['!stats de kommentare']:
+            print("found comments !stats de kommentare")
+            return ({'scope': 'general', 'table': Comments, 'date': '2016-1-1'})
+        elif comment.body.strip().lower() in ['!stats de posts']:
+            print("found comments !stats de posts")
+            return ({'scope': 'general', 'table': Submissions, 'date': '2016-1-1'})
 
-    def get_table(self):
-        return self.table
 
-    def set_author(self, author):
-        self.author = author
+    def check_author(self, author):
+        return (comment.author.name)
 
-    def set_table(self, table):
-        self.table = table
+    def check_already_replied(self):
+        """returns false if comment is not yet in table"""
+        query = session_bot.query(Calls.comment_id).filter(Calls.comment_id == self.commentid)
+        result = session_bot.query(query.exists()).first()[0]
+        print("Comment already in table is: ", result)
+        return (result)
 
-
-class Sql_User(Sql_Results):
-    """Basic Class for SQL results"""
-
-    def __init__(self, author, date, table):
-
-        super().__init__(author, date)
-        self.table = table
-
-        if self.table == Submissions:
-            self.table_text = 'submissionslarge'
-        else:
-            self.table_text = 'comments'
-
-    def get_has_data(self, session):
-        """returns true if user has rows in time frame"""
-
-        query = session.query(self.table.id).filter(
-            and_(self.table.autor == self.author, self.table.datum >= self.date))
-        result = session.query(query.exists()).first()[0]
-
-        if result == True:
+    def mark_as_replied(self):
+        calls_post = Calls(comment_id=self.commentid)
+        session_bot.add(calls_post)
+        try:
+            session_bot.commit()
             return (True)
-
-    def get_hash(self):
-
-        to_string = self.author + str(self.table) + str(self.get_update_date(session))
-        m = hashlib.md5(to_string.encode('utf-8')).hexdigest()
-
-        return (str(m)[:12])
-
-    def get_score_count(self, session):
-        """Returns total number of comments and sum of score
-        {'score': score, 'comments': number_of_comments"""
-
-        score_comments_total = session.query(func.sum(self.table.score).label("score"), \
-                                             func.count(self.table.id).label("comments")) \
-            .filter(and_(self.table.autor == self.author, self.table.datum >= self.date)).first()
-
-        return ({'score': score_comments_total.score, 'count': score_comments_total.comments})
-
-    def get_update_date(self, session):
-        """Returns the last datetime the database was updates"""
-
-        last_update = session.query(Submissions.datum).order_by(Submissions.datum.desc()).limit(1).first()
-
-        return (last_update.datum)
-
-    def get_top_flair(self, session):
-        """Returns the flair with the most submissions and its score
-        {'flair': flair, 'count': count}"""
-
-        if self.table == Submissions:
-            top_flair = session.query(func.count(Submissions.id).label("count"), Submissions.flair) \
-                .filter(and_(Submissions.autor == self.author, Submissions.datum >= self.date)) \
-                .group_by(Submissions.flair) \
-                .order_by(func.count(Submissions.id).desc()).first()
-        else:
-            top_flair = session.query(func.count(Comments.id).label("count"), Submissions.flair) \
-                .join(Submissions, Submissions.postid == Comments.postid) \
-                .filter(and_(Comments.autor == self.author, Comments.datum >= self.date)) \
-                .group_by(Submissions.flair) \
-                .order_by(func.count(Comments.id).desc()).first()
-
-        return ({'flair': top_flair.flair, 'count': top_flair.count})
-
-    def get_top_domain(self, session):
-        """Returns the domain with the most submissions and its score
-        {'domain': domain, 'count': count}"""
-
-        if self.table == Submissions:
-            top_domain = session.query(func.count(Submissions.id).label("count"), Submissions.domain) \
-                .filter(and_(Submissions.autor == self.author, Submissions.datum >= self.date)) \
-                .group_by(Submissions.domain) \
-                .order_by(func.count(Submissions.id).desc()).first()
-        else:
-            top_domain = session.query(func.count(Comments.id).label("count"), Submissions.domain) \
-                .join(Submissions, Submissions.postid == Comments.postid) \
-                .filter(and_(Comments.autor == self.author, Comments.datum >= self.date)) \
-                .group_by(Submissions.domain) \
-                .order_by(func.count(Comments.id).desc()).first()
-
-        return ({'domain': top_domain.domain, 'count': top_domain.count})
-
-    def get_top_post(self, session):
-        """Returns the postid and title of the top scoring post.
-        Need to later construct the permalink
-        {'postid': postid, 'title': title}"""
-
-        top_post = session.query(Submissions.postid, Submissions.title, Comments.commentid) \
-            .join(Comments, Submissions.postid == Comments.postid) \
-            .filter(and_(self.table.autor == self.author, self.table.datum >= self.date)) \
-            .order_by(self.table.score.desc()) \
-            .limit(1).first()
-
-        return ({'postid': top_post.postid, 'title': top_post.title, 'commentid': top_post.commentid})
-
-    def get_position_count(self, session):
-        """returns position compared to all for number of posts/comments"""
-
-        position_count = text("select row_number from \
-            	    (select autor, count(id), row_number () over(order by count(id) desc) \
-            	    from " + self.table_text + " \
-                    where datum >='" + self.date + "' \
-                    group by autor \
-            	    order by count(id) desc ) row \
-                    where autor = '" + self.author + "'")
-
-        return (session.execute(position_count).first()['row_number'])
-
-    def get_position_score(self, session):
-        """returns position compared to all for score of posts/comments"""
-
-        position_score = text("select row_number from \
-            	    (select autor, count(id), row_number () over(order by sum(score) desc) \
-            	    from " + self.table_text + " \
-                    where datum >='" + self.date + "' \
-                    group by autor \
-            	    order by sum(score) desc ) row \
-                    where autor = '" + self.author + "'")
-
-        return (session.execute(position_score).first()['row_number'])
-
-    # for some reason this was super slow
-
-    # def get_position_score(self):
-    #     """Returns the position compared to all other authors score wise"""
-    #     position_score_subqery = session.query(self.table.autor.label("autor"), func.sum(self.table.score), \
-    #                                                 func.row_number().over(order_by=(func.sum(self.table.score))).label(
-    #                                                     "row_number")) \
-    #         .group_by(self.table.autor) \
-    #         .order_by(func.sum(self.table.score).desc()) \
-    #         .subquery('position_score_subqery')
-    #     position_score = session.query(position_score_subqery.c.row_number) \
-    #         .filter(position_score_subqery.c.autor == self.author) \
-    #         .first()
-    #     return (position_score[0])
+        except exc.IntegrityError:
+            session_bot.rollback()
+            print("Already replied to comment ", comment, " This should not happen!")
+            return (False)
 
 
-# Subclass just for comments not needed for now
 
-# class Sql_Comments(Sql_Results):
-#     """Returns results for table Comments when joins are required"""
-#
-#     session = make_connection()
-#
-#     def __init__(self, author, date):
-#         super().__init__(author, date, table=Comments)
+class Message(object):
 
-
-class Message_Data(object):
-    """Creates the final Message"""
-
-    def __init__(self, author, date, table):
-        self.author = author
+    def __init__(self, date, author, table, scope):
         self.date = date
+        self.author = author
         self.table = table
+        self.scope = scope
 
-    def get_table(self):
+    def get_final_answer(self):
+
+        table_data = ''
+
+        if self.scope == 'user':
+
+            message_user = Message_User(self.date, self.author, self.table)
+            table_data = message_user.get_table_user()
+            image_data = message_user.get_image_text()
+
+        else:
+            table_data = 'test'
+            image_data = 'test'
+
+
+        seperator = "\n\n-------\n\n"
+        newline = "\n\n"
+
+        bottom = get_small_text(footer)
+        last_update = get_small_text("Daten bis: " + str(Sql_Results('','',Submissions,'').get_update_date(session)))
+
+        return(\
+                table_data\
+                + image_data\
+                + newline\
+                + seperator\
+                + newline\
+                + last_update\
+                + newline\
+                + bottom)
+
+    def check_hash_already_in_table(self, hash):
+        """Returns true if hash already in table"""
+
+        query = session_bot.query(Hashes.md5).filter(Hashes.md5 == hash)
+        result = session_bot.query(query.exists()).first()[0]
+        print("Hash already in table: ", result)
+        return (result)
+
+    def mark_hash_as_uploaded(self, hash, session):
+        """Mark hash as uploaded after images are uploaded"""
+        hash_post = Hashes(md5=hash)
+        session_bot.add(hash_post)
+        try:
+            session_bot.commit()
+        except exc.IntegrityError:
+            print("Hash was already in table")
+        except:
+            print("Unexpected error while trying to mark hash as read: ", sys.exc_info()[0])
+
+class Message_User(Message):
+
+    def __init__(self, date, author, table, scope='user'):
+        super().__init__(date, author, table, scope)
+
+    def get_table_user(self):
         """Creates the table headings with reddit syntax"""
 
-        sql_results = Sql_User(self.author, self.date, self.table)
+        sql_results = Sql_Results(self.date, self.author, self.table, self.scope)
 
-        if not sql_results.get_has_data(session):
-            return ('No Data')
+        # if not sql_results.get_has_data(session):
+        #     return ('No Data')
 
         score = str(sql_results.get_score_count(session)['score'])
-        pos_score = str(sql_results.get_position_score(session))
+        pos_score = str(sql_results.get_position(session, 'score'))
         count = str(sql_results.get_score_count(session)['count'])
-        pos_count = str(sql_results.get_position_count(session))
-        top_flair = sql_results.get_top_flair(session)['flair']
-        top_domain = sql_results.get_top_domain(session)['domain']
-        top_post_id = sql_results.get_top_post(session)['postid']
-        top_comment_id = sql_results.get_top_post(session)['commentid']
+        pos_count= str(sql_results.get_position(session, 'count'))
+        top_flair = sql_results.get_top_flairdomain(session, Submissions.flair)['column']
+        top_domain = sql_results.get_top_flairdomain(session, Submissions.domain)['column']
+        top_post_id = sql_results.get_top_single(session)['postid']
+        top_comment_id = sql_results.get_top_single(session)['commentid']
 
         if self.table == Submissions:
             heading = "Post"
@@ -239,18 +171,19 @@ class Message_Data(object):
         """format the link to the images. checks if has the same image was already created
         and if so returns the old link"""
 
-        hash = Sql_User(self.author, self.date, self.table).get_hash()
+        hash = get_hash(self.author, self.date, self.table)
 
-        hash_post = Hashes(md5=hash)
-        session_bot.add(hash_post)  # tries to write has to table
-        try:  # if hash is not yet in table
-            session_bot.commit()
-            time_image_path = time_graph(self.author, self.table, hash, session)
-            flair_image_path = flair_graph(self.author, self.table, hash, session)
+        already_in_table = self.check_hash_already_in_table(hash)
 
-        except exc.IntegrityError:  # fails because of unique constraint
-            session_bot.rollback()
-            print("Hash already in table")
+        if not already_in_table:
+            try:  # if hash is not yet in table
+                time_image_path = time_graph(self.author, self.table, hash, session)
+                flair_image_path = flair_graph(self.author, self.table, hash, session)
+                self.mark_hash_as_uploaded(hash, session_bot)
+            except:
+                print("Unexpected error while trying to upload the images: ", sys.exc_info()[0])
+
+        if already_in_table:
             time_image_path = "http://res.cloudinary.com/destats/image/upload/T" + hash  # return the old image path
             flair_image_path = "http://res.cloudinary.com/destats/image/upload/F" + hash  # return the old image path
 
@@ -259,57 +192,22 @@ class Message_Data(object):
 
         return (time_text + flair_text)
 
-        return ("bla")
 
-    def get_small_text(self, message):
-        """formats input string with ^ for small text in reddit"""
+def get_small_text(message):
+    """formats input string with ^ for small text in reddit"""
 
-        words = message.split()
-        words_transformed = list(map(lambda x: " ^^" + x, words))
-        words_together = "".join(words_transformed)
-        return (words_together)
-
-    def get_final_answer(self):
-        """Puts all the shit together"""
-
-        last_update = self.get_small_text(header) + " " + self.get_small_text(
-            str(Sql_User(self.author, self.table, self.date).get_update_date(session).date()))
-        table_data = self.get_table()
-        images_data = self.get_image_text()
-        seperator = "\n\n-------\n\n"
-        newline = "\n\n"
-        bottom = self.get_small_text(footer)
-
-        return (table_data + images_data + newline + seperator + newline + last_update + newline + bottom)
+    words = message.split()
+    words_transformed = list(map(lambda x: " ^^" + x, words))
+    words_together = "".join(words_transformed)
+    return (words_together)
 
 
-class Check_Comment:
-    """Checks if Comment calls the bot, if Comment was already
-    replied to and if comments or submissions are requested"""
+def get_hash(author, date, table):
 
-    def __init__(self, body, commentid):
-        self.body = body
-        self.commentid = commentid
+    to_string = author + str(table) + str(Sql_Results('','',Submissions,'').get_update_date(session))
+    m = hashlib.md5(to_string.encode('utf-8')).hexdigest()
 
-    def check_body(self):
-        if self.body.strip().lower() in ['!stats kommentare']:
-            return (Comments)
-        elif comment.body.strip().lower() in ['!stats posts']:
-            return (Submissions)
-
-    def check_author(self, author):
-        return (comment.author.name)
-
-    def check_already_replied(self):
-        calls_post = Calls(comment_id=self.commentid)
-        session_bot.add(calls_post)
-        try:
-            session_bot.commit()
-            return (True)
-        except exc.IntegrityError:
-            session_bot.rollback()
-            # print("Already replied to comment ", comment)
-            return (False)
+    return(str(m)[:12])
 
 
 ###################
@@ -324,16 +222,21 @@ while True:
         for comment in comments:
 
             check = Check_Comment(comment.body, comment.id)
-            table = check.check_body()  # checks if comment body calls bot, if so returns Submissions or Comments
+            body_parameters = check.check_body() # checks if comment body calls bot, if so returns Submissions or Comments
 
-            if table and check.check_already_replied():  # other checks are only needed if this is true
+            if body_parameters and not check.check_already_replied():  # other checks are only needed if this is true
+
+                scope = body_parameters['scope']
+                print(scope)
+                table = body_parameters['table']
+                date = body_parameters['date']
 
                 try:
                     author = check.check_author(comment.author)
                 except AttributeError:
                     print("Can't fetch author name. Probably deleted")
 
-                has_data = Sql_User(author, date, table).get_has_data(session)
+                has_data = Sql_Results(date, author, table, scope).check_has_data(session)
 
                 if not has_data:
                     answer = ("No Data")
@@ -344,9 +247,14 @@ while True:
                     sys.stdout.flush()
 
                 if author and has_data:
-                    answer = Message_Data(author, date, table).get_final_answer()
+                    answer = Message(date, author, table, scope).get_final_answer()
+                    print(answer)
                     print("Replying to: ", author, " Comment-ID: ", comment.id, " Called by: ", comment.body)
-                    comment.reply(answer)
+                    try :
+                        comment.reply(answer)
+                        check.mark_as_replied()
+                    except:
+                        print("Unexpected error while trying to answer comment: ", sys.exc_info()[0])
                     # print(answer)
                     session.close()
                     sys.stdout.flush()
