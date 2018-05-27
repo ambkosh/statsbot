@@ -120,3 +120,60 @@ class Sql_Results(object):
             .limit(1).first()
 
         return ({'postid': top_post.postid, 'title': top_post.title, 'commentid': top_post.commentid})
+
+    def get_top_20(self, session):
+        result =session.query(self.table.autor, func.sum(self.table.score).label("score"), func.count(self.table.id).label("count")).\
+                filter(and_(self.table.datum >=  self.date, self.table.autor != '[deleted]')).\
+                group_by(self.table.autor).\
+                order_by(func.sum(self.table.score).desc()).\
+                limit(20)
+
+        result_list = []
+
+        for item in result:
+            result_list.append({'author': item.autor, 'score': item.score, 'count':item.count})
+
+        return(result_list)
+
+
+
+def format_reddit_table(table_data):
+    """Formats data in reddit table format"""
+
+    num_columns = len(table_data[0].keys())
+    num_rows = len(table_data)
+
+    headings = list(table_data[0].keys())
+    headings_formated = []
+    table_align = []
+    table_row = []
+
+    for i in range (0, num_columns):
+        if i != num_columns-1:
+            (lambda x: headings_formated.append(x + " | "))(headings[i])
+        else:
+            headings_formated.append(" " + headings[i] + "\n")
+
+    table = ''.join(headings_formated)
+
+    for i in range (0, num_columns):
+        if i != num_columns-1:
+            table_align.append("--|")
+        else:
+            table_align.append("--" + "\n")
+
+    table += ''.join(table_align)
+
+    for i in range (0, num_rows):
+        table_row = []
+        for j in range(0, num_columns):
+            if j != num_columns-1:
+                table_row.append(str(table_data[i][headings[j]]) + " | ")
+            else:
+                table_row.append(str(table_data[i][headings[j]]) + "\n")
+        table += ''.join(table_row)
+
+    return(table)
+
+# table_data = Sql_Results('2018-1-1', 'amb_kosh', Submissions, 'general').get_top_20(session)
+# print(format_reddit_table(table_data))

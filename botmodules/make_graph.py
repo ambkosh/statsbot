@@ -72,11 +72,6 @@ def time_graph(author, table, hash, session):
     plt2.xaxis.set_minor_locator(weeks)
     plt2.set_ylabel('Number of comments\n per week')
 
-    #print(directory)
-    #outpath = str(directory) + "/output/time_graph.png"
-    #outpath.replace("\\","/")
-    #output_path = str(path.cwd().joinpath("output", "time_graph.png").absolute())
-    #print(output_path)
 
     plt.savefig("output/time_graph.png")
     return(upload_image("output/time_graph.png", "T"+hash))
@@ -131,10 +126,6 @@ def flair_graph(author, table, hash, session):
     ax.set_xticklabels(flairs, ha='right')
 
     #plt.show()
-    #outpath = str(directory) + "/output/flair_graph.png"
-    #outpath.replace("\\","/")
-    #output_path = str(path.cwd().joinpath("output", "flair_graph.png"))
-    #print("flair_graph.png")
 
     plt.savefig("output/flair_graph.png")
     return(upload_image("output/flair_graph.png", "F"+hash))

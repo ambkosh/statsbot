@@ -36,16 +36,16 @@ class Check_Comment:
     def check_body(self):
         if self.body.strip().lower() in ['!stats kommentare']:
             print("found comment !stats kommentare")
-            return ({'scope': 'user', 'table': Comments, 'date': '2016-1-1'})
+            return ({'scope': 'user', 'table': Comments, 'date': '2018-1-1'})
         elif comment.body.strip().lower() in ['!stats posts']:
             print("found comment !stats posts")
-            return ({'scope': 'user', 'table': Submissions, 'date': '2016-1-1'})
+            return ({'scope': 'user', 'table': Submissions, 'date': '2018-1-1'})
         elif comment.body.strip().lower() in ['!stats de kommentare']:
             print("found comments !stats de kommentare")
-            return ({'scope': 'general', 'table': Comments, 'date': '2016-1-1'})
+            return ({'scope': 'general', 'table': Comments, 'date': '2018-1-1'})
         elif comment.body.strip().lower() in ['!stats de posts']:
             print("found comments !stats de posts")
-            return ({'scope': 'general', 'table': Submissions, 'date': '2016-1-1'})
+            return ({'scope': 'general', 'table': Submissions, 'date': '2018-1-1'})
 
 
     def check_author(self, author):
@@ -90,7 +90,7 @@ class Message(object):
             image_data = message_user.get_image_text()
 
         else:
-            table_data = 'test'
+            table_data = format_reddit_table(Sql_Results(self.date, self.author, self.table, 'general').get_top_20(session))
             image_data = 'test'
 
 
@@ -208,6 +208,44 @@ def get_hash(author, date, table):
     m = hashlib.md5(to_string.encode('utf-8')).hexdigest()
 
     return(str(m)[:12])
+
+def format_reddit_table(table_data):
+    """Formats data in reddit table format"""
+
+    num_columns = len(table_data[0].keys())
+    num_rows = len(table_data)
+
+    headings = list(table_data[0].keys())
+    headings_formated = []
+    table_align = []
+    table_row = []
+
+    for i in range (0, num_columns):
+        if i != num_columns-1:
+            (lambda x: headings_formated.append(x + " | "))(headings[i])
+        else:
+            headings_formated.append(" " + headings[i] + "\n")
+
+    table = ''.join(headings_formated)
+
+    for i in range (0, num_columns):
+        if i != num_columns-1:
+            table_align.append("--|")
+        else:
+            table_align.append("--" + "\n")
+
+    table += ''.join(table_align)
+
+    for i in range (0, num_rows):
+        table_row = []
+        for j in range(0, num_columns):
+            if j != num_columns-1:
+                table_row.append(str(table_data[i][headings[j]]) + " | ")
+            else:
+                table_row.append(str(table_data[i][headings[j]]) + "\n")
+        table += ''.join(table_row)
+
+    return(table)
 
 
 ###################
