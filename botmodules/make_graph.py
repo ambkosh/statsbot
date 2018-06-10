@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.patches as mpatches
 import numpy as np
+import pandas as pd
+from scipy.interpolate import interp1d
 
 from sqlalchemy import func, text, cast, Time, and_
 
@@ -219,13 +221,27 @@ class Flair_lists(object):
 
 def scatter_graph_total(session, date):
 
+    column = Submissions.score
+    title = "Flairs by number of submissions"
+    label = "Numer of submissions"
+    timeframe = 'month'
+
+    group1 = ['Humor/MaiMai', 'Humor', 'MaiMai', 'Humor/MaiMai ']
+    group2 = ['Interessant', 'Medien', 'Boulevard', 'Gesellschaft']
+    group3 = ['Frage/Diskussion', 'Dienstmeldung', 'TIRADE', 'Meta/Reddit']
+    group4 = ['Politik', 'Nachrichten', 'Nachrichten DE', 'Kriminalität', 'Flüchtlinge', 'US-Politik', 'Nachrichten Europa', 'Terrorismus', 'Nachrichten Welt', 'Nachrichten A', 'Nachrichten CH']
+    group5 = ['Geschichte', 'Wissenschaft&Technik', 'Bildung', 'Umwelt', 'Feuilleton/Kultur', 'Musik', 'Wirtschaft']
+    group6 = ['Essen&Trinken', 'Sport', 'Zocken']
+    group7 = [] #all other flairs
+
+    groups = [group1, group2, group3, group4, group5, group6]
 
 
-    result = session.query(func.sum(Submissions.num_komments).label("score"), func.date_trunc('week', Submissions.datum).label("datum"), Submissions.flair)\
-        .filter(and_(Submissions.datum >= date))\
-        .group_by(func.date_trunc('week', Submissions.datum), Submissions.flair)\
-        .order_by(func.date_trunc('week', Submissions.datum), func.sum(Submissions.score).desc())\
-        .having(func.count(Submissions.id) >= 0)
+    result = session.query(func.count(column).label("score"), func.date_trunc(timeframe, Submissions.datum).label("datum"), Submissions.flair)\
+        .filter(and_(Submissions.datum >= date, Submissions.datum <= '2018-5-13'))\
+        .group_by(func.date_trunc(timeframe, Submissions.datum), Submissions.flair)\
+        .order_by(func.date_trunc(timeframe, Submissions.datum), func.sum(Submissions.score).desc())\
+        .having(func.count(Submissions.id) >= 10)
 
     flairs = []
     dates = []
@@ -234,12 +250,14 @@ def scatter_graph_total(session, date):
 
 
     for item in result:
+
         flairs.append(item.flair)
         try:
-            if dates[-1] != item.datum:
-                dates.append(item.datum)
+            if dates[-1] != item.datum.timestamp():
+                dates.append(item.datum.timestamp())
         except IndexError:
-            dates.append(item.datum)
+            dates.append(item.datum.timestamp())
+
 
     unique_flairs = list(set(flairs))
 
@@ -260,40 +278,113 @@ def scatter_graph_total(session, date):
         old_date = item.datum
 
     result_dict = Flair_lists("","","","").result_dict
+    flair_legend = []
+
+
+    date_new = np.linspace(dates[0], dates[-1], len(dates)*50) #new x for interpolation
+    dates_new = [datetime.datetime.fromtimestamp(i) for i in date_new] #convert back to datedtime
+
+    print(dates_new)
 
     y_list = []
-    for keys, values in result_dict.items():
-        y_list.append(values)
+    i = 0
+    d= []
+    for member in groups:
+        i += 1
+        for keys, values in result_dict.items():
+            if keys in member:
+                f = interp1d(dates, values, kind='quadratic')
+                new_y = f(date_new)
+                y_list.append(new_y)
+                flair_legend.append(keys)
 
+        if i == len(groups):
+            for keys, values in result_dict.items():
+                if keys not in [item for sublist in groups for item in sublist]:
+                    group7.append(keys)
+                    f = interp1d(dates, values, kind='quadratic')
+                    new_y = f(date_new)
+                    y_list.append(new_y)
+                    flair_legend.append(keys)
+
+    # print(dates)
+    # print(y_list, flair_legend)
+    # df = pd.DataFrame(data=y_list, columns=dates, index=flair_legend)
+    # print(df)
+    # df = df.transpose()
+    # df.plot(kind='area')
     #
     # create graph
     #
 
-    ticks = mdates.DateFormatter('%Y-%m')
 
-    cmap = plt.get_cmap('terrain')
-    color = cmap(np.linspace(0, 1, (len(result_dict.keys()))))
+    print(y_list)
+
+
+    ticks = mdates.DateFormatter('%Y-%m-%d')
+
+
+    start_color_range = 0.5
+    stop_color_range = 0.96
+
+    cmap_blue =     plt.get_cmap('Blues')(np.linspace(start_color_range, stop_color_range, (len(group1))))
+    cmap_green =    plt.get_cmap('Greens')(np.linspace(start_color_range, stop_color_range, (len(group2))))
+    cmap_red =      plt.get_cmap('Reds')(np.linspace(start_color_range, stop_color_range, (len(group3))))
+    cmap_purple =   plt.get_cmap('Purples')(np.linspace(start_color_range, stop_color_range, (len(group4))))
+    cmap_orange =   plt.get_cmap('Oranges')(np.linspace(start_color_range, stop_color_range, (len(group5))))
+    cmap_grey =     plt.get_cmap('Greys')(np.linspace(start_color_range, stop_color_range, (len(group6))))
+    cmap_grey2 =     plt.get_cmap('Wistia')(np.linspace(start_color_range, stop_color_range, (len(group7))))
+
+
+    colormap = []
+    bluei = greeni = redi = purplei = orangei = greyi = greyi2 = 0
+    for flair in flair_legend:
+        if flair in group1:
+            colormap.append(cmap_blue[bluei])
+            bluei += 1
+        elif flair in group2:
+            colormap.append(cmap_green[greeni])
+            greeni += 1
+        elif flair in group3:
+            colormap.append(cmap_red[redi])
+            redi += 1
+        elif flair in group4:
+            colormap.append(cmap_purple[purplei])
+            purplei += 1
+        elif flair in group5:
+            colormap.append(cmap_orange[orangei])
+            orangei += 1
+        elif flair in group6:
+            colormap.append(cmap_grey[greyi])
+            greyi += 1
+        elif flair in group7:
+            colormap.append(cmap_grey2[greyi2])
+            greyi2 += 1
 
     #color_patches = []
     # for i in range(0, len(unique_flairs)):
     #     color_patch = mpatches.Patch(color=color[i], label=unique_flairs[i])
     #     color_patches.append(color_patch)
 
-    plt.style.use('ggplot')
+    plt.style.use('Solarize_Light2')
     plt.rcParams.update({'figure.autolayout': True})
-    plt.figure(figsize=(15,5))
+    plt.figure(figsize=(25,7))
 
-    print(result_dict.keys())
+    days = mdates.MonthLocator()
 
 
     ax = plt.subplot()
-    ax.stackplot(dates, y_list, labels=result_dict.keys(), colors=color)
-    ax.legend(loc=2, prop={'size': 7}, ncol=6)
+
+    ax.stackplot(dates_new, y_list, labels=flair_legend, colors=colormap)
+    ax.legend(loc=2, prop={'size': 10}, ncol=6)
 
     ax.xaxis.set_major_formatter(ticks)
-    ax.xaxis.set_tick_params(labelrotation=55)
+    ax.xaxis.set_minor_locator(days)
+    ax.xaxis.set_tick_params(labelrotation=0)
+    ax.set_ylim(0)
     #plt.legend(handles=color_patches)
 
+    plt.title(title)
+    plt.ylabel(label)
     plt.show()
-
 
