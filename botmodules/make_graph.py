@@ -81,7 +81,6 @@ def time_graph(author, table, hash, session):
     return(upload_image("output/time_graph.png", "T"+hash))
 
 
-
 def flair_graph(author, table, hash, session):
     """creates the flair graph for given user
     Uploads the picture and returns the image link"""
@@ -134,6 +133,7 @@ def flair_graph(author, table, hash, session):
     plt.savefig("output/flair_graph.png")
     return(upload_image("output/flair_graph.png", "F"+hash))
 
+
 def total_distribution_graph(table, time, session):
 
     result = session.query(table.autor.label("author"), func.count(table.id).label("count"), func.sum(table.score).label("score"))\
@@ -161,9 +161,6 @@ def total_distribution_graph(table, time, session):
     #plt.yscale('log')
     plt.show()
     return(plt)
-
-
-
 
 class Flair_lists(object):
     """creates the score lists for each flair"""
@@ -218,8 +215,7 @@ class Flair_lists(object):
                     self.add_value(0, flair)
 
 
-
-def scatter_graph_total(session, date):
+def total_flair_graph(session, date):
 
     column = Submissions.score
     title = "Flairs by number of submissions"
@@ -382,9 +378,65 @@ def scatter_graph_total(session, date):
     ax.xaxis.set_minor_locator(days)
     ax.xaxis.set_tick_params(labelrotation=0)
     ax.set_ylim(0)
-    #plt.legend(handles=color_patches)
 
     plt.title(title)
     plt.ylabel(label)
     plt.show()
+
+
+class Total_time_graph(object):
+
+    color1 = 'red'
+    color2 = 'blue'
+
+    def __init__(self, date='2018-1-1'):
+        self.date = date
+    
+    '''The graph for the multiple overview stats called by stats de general'''
+
+    def format_plot(self, plot, data, data2, title):
+
+        plot.plot(data, color=self.color1)
+        plot.set_title(title)
+        plot.set_ylabel(data.name, color=self.color1)
+        plot.tick_params('y', colors=self.color1)
+        plot.xaxis.set_tick_params(labelrotation=45)
+
+        ax2 = plot.twinx()  # for second y axis on same plot
+        ax2.plot(data2, color=self.color2)
+        ax2.tick_params(axis='y', colors=self.color2)
+        ax2.set_ylabel(data2.name, color=self.color2)
+
+
+    def make_graph(self, session):
+
+        subs_query = session.query(func.count(Submissions.score).label("Posts count"), func.sum(Submissions.score).label("Posts score"),\
+                                   func.date_trunc('week', Submissions.datum).label("date")) \
+            .group_by(func.date_trunc('week', Submissions.datum)) \
+            .having(func.date_trunc('week', Submissions.datum) > self.date)\
+            .statement
+
+        comments_query = session.query(func.count(Comments.score).label("Comments count"), func.sum(Comments.score).label("Comments score"),\
+                                   func.date_trunc('week', Comments.datum).label("date")) \
+            .group_by(func.date_trunc('week', Comments.datum)) \
+            .having(func.date_trunc('week', Comments.datum) > self.date)\
+            .statement
+
+        df1 = pd.read_sql(comments_query, session.bind, index_col=['date'])
+        df2 = pd.read_sql(subs_query, session.bind, index_col=['date'])
+
+        df = pd.concat([df1,df2], axis=1) #axis = 1 because of same index
+        df = df.resample('3T')
+        df = df.interpolate(method='cubic', limit_direction='both')
+
+        plt.style.use('Solarize_Light2')
+        fig, (axes) = plt.subplots(2, 1) #creates for plots, i.e. one plot is axes[0, 0}
+
+        self.format_plot(axes[0], df["Posts count"], df["Posts score"], "Posts")
+        self.format_plot(axes[1], df["Comments count"], df["Comments score"], "Comments")
+
+
+        fig.tight_layout()
+        plt.show()
+
 
