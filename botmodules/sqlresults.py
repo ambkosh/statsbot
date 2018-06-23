@@ -83,6 +83,8 @@ class Sql_Results(object):
     def get_position(self, session, column):
         """returns the position for score or number of comments"""
 
+        self.date = str(self.date)
+
         if self.table == Submissions:
             table_text = 'submissionslarge' #need to make it string for execution it as text
         else:
@@ -122,7 +124,7 @@ class Sql_Results(object):
         return ({'postid': top_post.postid, 'title': top_post.title, 'commentid': top_post.commentid})
 
     def get_top_20(self, session):
-        result =session.query(self.table.autor, func.sum(self.table.score).label("score"), func.count(self.table.id).label("count")).\
+        result =session.query(self.table.autor.label("Author"), func.sum(self.table.score).label("Score"), func.count(self.table.id).label("Count")).\
                 filter(and_(self.table.datum >=  self.date, self.table.autor != '[deleted]')).\
                 group_by(self.table.autor).\
                 order_by(func.sum(self.table.score).desc()).\
@@ -131,9 +133,9 @@ class Sql_Results(object):
         result_list = []
 
         for item in result:
-            result_list.append({'author': item.autor, 'score': item.score, 'count':item.count})
+            result_list.append({'author': item.Author, 'score': item.Score, 'count':item.Count})
 
-        return(result_list)
+        return( result_list)
 
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python3.6
 
-import matplotlib
-#matplotlib.use('Agg')
+import matplotlib #
+matplotlib.use('Agg') #turn this off if you want to show the plot
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -17,7 +17,7 @@ from botmodules.upload_image import upload_image
 import datetime
 
 
-def time_graph(author, table, hash, session):
+def time_graph(author, table, hash, session, date):
     """creates the time graph for given user
     Uploads the picture and returns the image link"""
 
@@ -25,7 +25,7 @@ def time_graph(author, table, hash, session):
 
 
     result_day = session.query(func.date_part('hour', table.datum).label("time"), func.count(table.id).label("count"))\
-        .filter(table.autor == author)\
+        .filter(and_(table.autor == author, table.datum >= date))\
         .group_by(func.date_part('hour', table.datum))
 
     times_day = []
@@ -43,7 +43,7 @@ def time_graph(author, table, hash, session):
     counts_all = []
 
     result_all_time = session.query(func.date_trunc('week', table.datum).label("time"), func.count(table.id).label("count"))\
-        .filter(table.autor == author)\
+        .filter(and_(table.autor == author, table.datum >= date))\
         .group_by(func.date_trunc('week', table.datum))
 
     for item in result_all_time:
@@ -165,7 +165,6 @@ def total_distribution_graph(table, time, session):
 class Flair_lists(object):
     """creates the score lists for each flair"""
 
-
     result_dict = {}
     marked = {}
 
@@ -215,12 +214,12 @@ class Flair_lists(object):
                     self.add_value(0, flair)
 
 
-def total_flair_graph(session, date):
+def total_flair_graph(author, table, date, hash, session):
 
     column = Submissions.score
     title = "Flairs by number of submissions"
     label = "Numer of submissions"
-    timeframe = 'month'
+    timeframe = 'week'
 
     group1 = ['Humor/MaiMai', 'Humor', 'MaiMai', 'Humor/MaiMai ']
     group2 = ['Interessant', 'Medien', 'Boulevard', 'Gesellschaft']
@@ -280,8 +279,6 @@ def total_flair_graph(session, date):
     date_new = np.linspace(dates[0], dates[-1], len(dates)*50) #new x for interpolation
     dates_new = [datetime.datetime.fromtimestamp(i) for i in date_new] #convert back to datedtime
 
-    print(dates_new)
-
     y_list = []
     i = 0
     d= []
@@ -302,19 +299,6 @@ def total_flair_graph(session, date):
                     new_y = f(date_new)
                     y_list.append(new_y)
                     flair_legend.append(keys)
-
-    # print(dates)
-    # print(y_list, flair_legend)
-    # df = pd.DataFrame(data=y_list, columns=dates, index=flair_legend)
-    # print(df)
-    # df = df.transpose()
-    # df.plot(kind='area')
-    #
-    # create graph
-    #
-
-
-    print(y_list)
 
 
     ticks = mdates.DateFormatter('%Y-%m-%d')
@@ -383,13 +367,19 @@ def total_flair_graph(session, date):
     plt.ylabel(label)
     plt.show()
 
+    plt.savefig("output/total_flair_graph.png")
+    return (upload_image("output/total_flair_graph.png", "F" + hash))
+
 
 class Total_time_graph(object):
 
     color1 = 'red'
     color2 = 'blue'
 
-    def __init__(self, date='2018-1-1'):
+    def __init__(self, author, table, hash, date):
+        self.author = author
+        self.table = table
+        self.hash = hash
         self.date = date
     
     '''The graph for the multiple overview stats called by stats de general'''
@@ -429,7 +419,8 @@ class Total_time_graph(object):
         df = df.resample('3T')
         df = df.interpolate(method='cubic', limit_direction='both')
 
-        plt.style.use('Solarize_Light2')
+        plt.style.use('ggplot')
+        plt.rcParams.update({'font.size': 8})
         fig, (axes) = plt.subplots(2, 1) #creates for plots, i.e. one plot is axes[0, 0}
 
         self.format_plot(axes[0], df["Posts count"], df["Posts score"], "Posts")
@@ -437,6 +428,9 @@ class Total_time_graph(object):
 
 
         fig.tight_layout()
-        plt.show()
+        #plt.show()
+
+        plt.savefig("output/total_time_graph.png")
+        return (upload_image("output/total_time_graph.png", "T" + self.hash))
 
 

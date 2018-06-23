@@ -58,6 +58,34 @@ class Comments(Base):
     parentid        = Column(String(10))
     isroot          = Column(Boolean)
 
+# class Joined(Base):
+#
+#     __tablename__ = 'joined'
+#
+#     id              = Column(Integer, primary_key=True)
+#     commentid       = Column(String(10), nullable=False, unique=True)
+#     postid          = Column(String(10), ForeignKey("submissionslarge.postid"), nullable=False)
+#     subredditid     = Column(String(10), nullable=False)
+#     autor           = Column(String(250))
+#     body            = Column(TEXT(convert_unicode=True))
+#     score           = Column(Integer)
+#     subredditname   = Column(String(200))
+#     datum           = Column(DateTime)
+#     autorflair      = Column(String(200))
+#     datumtag        = Column(DateTime)
+#     gilded          = Column(Integer)
+#     ups             = Column(Integer)
+#     downs           = Column(Integer)
+#     controversiality= Column(Integer)
+#     depth           = Column(Integer)
+#     replies         = Column(Integer)
+#     parentid        = Column(String(10))
+#     isroot          = Column(Boolean)
+#     flair       = Column(String(250))
+#     num_komments= Column(Integer)
+#     domain      = Column(String(250))
+#     over18      = Column(Boolean)
+#     title       = Column(String(2000))
 
 
 
