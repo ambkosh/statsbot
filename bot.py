@@ -245,8 +245,8 @@ class Message_General(Message):
                 time_image_path = Total_time_graph(self.author, self.table, hash, self.date).make_graph(session)
                 flair_image_path = total_flair_graph(self.author, self.table, self.date, hash, session)
                 self.mark_hash_as_uploaded(hash, session_bot)
-            except:
-                print("Unexpected error while trying to upload the images: ", sys.exc_info()[0])
+            except Exception as e:
+                print("Unexpected error while trying to upload the images: ", e)
 
         if already_in_table:
             time_image_path = "http://res.cloudinary.com/destats/image/upload/T" + hash  # return the old image path
