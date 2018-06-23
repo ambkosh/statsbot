@@ -233,7 +233,7 @@ def total_flair_graph(author, table, date, hash, session):
 
 
     result = session.query(func.count(column).label("score"), func.date_trunc(timeframe, Submissions.datum).label("datum"), Submissions.flair)\
-        .filter(and_(Submissions.datum >= date, Submissions.datum <= '2018-5-13'))\
+        .filter(Submissions.datum >= date)\
         .group_by(func.date_trunc(timeframe, Submissions.datum), Submissions.flair)\
         .order_by(func.date_trunc(timeframe, Submissions.datum), func.sum(Submissions.score).desc())\
         .having(func.count(Submissions.id) >= 10)

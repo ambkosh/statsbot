@@ -15,7 +15,6 @@ def upload_image(image, hash):
     try:
         result = cloudinary.uploader.upload(image, public_id = hash)
         URL = cloudinary.utils.cloudinary_url(result['public_id'])[0]
-        print("Uploading image")
     except cloudinary.api.Error as e:
         print(e)
         URL = "http://res.cloudinary.com/destats/image/upload/" + hash
