@@ -255,9 +255,9 @@ class Message_General(Message):
         time_text = "\n\n" + "[Entwicklung von Score und Anzahl Posts, Kommentaren nach Zeit](" + time_image_path + ")"
         try:
             flair_text = "\n\n" + "[Verteilung nach Flair](" + flair_image_path + ")"
-        except ValueError:
+        except UnboundLocalError:
             print("Something went wrong while getting flair text, probably someting with interpolation")
-            flair_text = ""
+            flair_text_path = ""
 
         return (time_text+ flair_text)
 
