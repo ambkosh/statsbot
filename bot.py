@@ -85,7 +85,7 @@ class Check_Comment:
         """returns false if comment is not yet in table"""
         query = session_bot.query(Calls.comment_id).filter(Calls.comment_id == self.commentid)
         result = session_bot.query(query.exists()).first()[0]
-        print("Comment already in table is: ", result)
+        print("Comment already in table: ", result)
         return (result)
 
     def mark_as_replied(self):
