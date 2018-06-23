@@ -286,8 +286,11 @@ def total_flair_graph(author, table, date, hash, session):
         i += 1
         for keys, values in result_dict.items():
             if keys in member:
-                f = interp1d(dates, values, kind='quadratic')
-                new_y = f(date_new)
+                try:
+                    f = interp1d(dates, values, kind='quadratic')
+                    new_y = f(date_new)
+                except Exception as e:
+                    print("Error while interpolating: ", e)
                 y_list.append(new_y)
                 flair_legend.append(keys)
 
@@ -295,8 +298,11 @@ def total_flair_graph(author, table, date, hash, session):
             for keys, values in result_dict.items():
                 if keys not in [item for sublist in groups for item in sublist]:
                     group7.append(keys)
-                    f = interp1d(dates, values, kind='quadratic')
-                    new_y = f(date_new)
+                    try:
+                        f = interp1d(dates, values, kind='quadratic')
+                        new_y = f(date_new)
+                    except Exception as e:
+                        print("Error while interpolating: ", e)
                     y_list.append(new_y)
                     flair_legend.append(keys)
 
