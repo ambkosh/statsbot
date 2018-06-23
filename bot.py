@@ -253,7 +253,11 @@ class Message_General(Message):
             flair_image_path = "http://res.cloudinary.com/destats/image/upload/F" + hash  # return the old image path
 
         time_text = "\n\n" + "[Entwicklung von Score und Anzahl Posts, Kommentaren nach Zeit](" + time_image_path + ")"
-        flair_text = "\n\n" + "[Verteilung nach Flair](" + flair_image_path + ")"
+        try:
+            flair_text = "\n\n" + "[Verteilung nach Flair](" + flair_image_path + ")"
+        except ValueError:
+            print("Something went wrong while getting flair text, probably someting with interpolation")
+            flair_text = ""
 
         return (time_text+ flair_text)
 
