@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 
-from sqlalchemy import func, text, cast, Time, and_
+from sqlalchemy import func, text, cast, Time, and_, distinct, case, select
 
 from botmodules.sqlconnect import make_connection, Submissions, Comments
 from botmodules.upload_image import upload_image
@@ -214,169 +214,6 @@ class Flair_lists(object):
                     self.add_value(0, flair)
 
 
-def total_flair_graph(author, table, date, hash, session):
-
-    column = Submissions.score
-    title = "Flairs by number of submissions"
-    label = "Numer of submissions"
-    timeframe = 'week'
-
-    group1 = ['Humor/MaiMai', 'Humor', 'MaiMai', 'Humor/MaiMai ']
-    group2 = ['Interessant', 'Medien', 'Boulevard', 'Gesellschaft']
-    group3 = ['Frage/Diskussion', 'Dienstmeldung', 'TIRADE', 'Meta/Reddit']
-    group4 = ['Politik', 'Nachrichten', 'Nachrichten DE', 'Kriminalität', 'Flüchtlinge', 'US-Politik', 'Nachrichten Europa', 'Terrorismus', 'Nachrichten Welt', 'Nachrichten A', 'Nachrichten CH']
-    group5 = ['Geschichte', 'Wissenschaft&Technik', 'Bildung', 'Umwelt', 'Feuilleton/Kultur', 'Musik', 'Wirtschaft']
-    group6 = ['Essen&Trinken', 'Sport', 'Zocken']
-    group7 = [] #all other flairs
-
-    groups = [group1, group2, group3, group4, group5, group6]
-
-
-    result = session.query(func.count(column).label("score"), func.date_trunc(timeframe, Submissions.datum).label("datum"), Submissions.flair)\
-        .filter(Submissions.datum >= date)\
-        .group_by(func.date_trunc(timeframe, Submissions.datum), Submissions.flair)\
-        .order_by(func.date_trunc(timeframe, Submissions.datum), func.sum(Submissions.score).desc())\
-        .having(func.count(Submissions.id) >= 10)
-
-    flairs = []
-    dates = []
-    last_date = ""
-    old_date = result.first().datum
-
-
-    for item in result:
-
-        flairs.append(item.flair)
-        try:
-            if dates[-1] != item.datum.timestamp():
-                dates.append(item.datum.timestamp())
-        except IndexError:
-            dates.append(item.datum.timestamp())
-
-
-    unique_flairs = list(set(flairs))
-
-    last = result[-1]
-
-    for item in result:
-
-        flair_list = Flair_lists(item.flair, item.score, item.datum, unique_flairs)
-
-        flair_list.mark() # mark flair for that date
-        flair_list.add_value(item.score, item.flair) #add value for flair
-
-        if item == last:
-            flair_list.check_mark(old_date, "last")
-        else:
-            flair_list.check_mark(old_date, "")
-
-        old_date = item.datum
-
-    result_dict = Flair_lists("","","","").result_dict
-    flair_legend = []
-
-
-    date_new = np.linspace(dates[0], dates[-1], len(dates)*50) #new x for interpolation
-    dates_new = [datetime.datetime.fromtimestamp(i) for i in date_new] #convert back to datedtime
-
-    y_list = []
-    i = 0
-    d= []
-    for member in groups:
-        i += 1
-        for keys, values in result_dict.items():
-            if keys in member:
-                try:
-                    f = interp1d(dates, values, kind='quadratic')
-                    new_y = f(date_new)
-                except Exception as e:
-                    print("Error while interpolating: ", e)
-                y_list.append(new_y)
-                flair_legend.append(keys)
-
-        if i == len(groups):
-            for keys, values in result_dict.items():
-                if keys not in [item for sublist in groups for item in sublist]:
-                    group7.append(keys)
-                    try:
-                        f = interp1d(dates, values, kind='quadratic')
-                        new_y = f(date_new)
-                    except Exception as e:
-                        print("Error while interpolating: ", e)
-                    y_list.append(new_y)
-                    flair_legend.append(keys)
-
-
-    ticks = mdates.DateFormatter('%Y-%m-%d')
-
-
-    start_color_range = 0.5
-    stop_color_range = 0.96
-
-    cmap_blue =     plt.get_cmap('Blues')(np.linspace(start_color_range, stop_color_range, (len(group1))))
-    cmap_green =    plt.get_cmap('Greens')(np.linspace(start_color_range, stop_color_range, (len(group2))))
-    cmap_red =      plt.get_cmap('Reds')(np.linspace(start_color_range, stop_color_range, (len(group3))))
-    cmap_purple =   plt.get_cmap('Purples')(np.linspace(start_color_range, stop_color_range, (len(group4))))
-    cmap_orange =   plt.get_cmap('Oranges')(np.linspace(start_color_range, stop_color_range, (len(group5))))
-    cmap_grey =     plt.get_cmap('Greys')(np.linspace(start_color_range, stop_color_range, (len(group6))))
-    cmap_grey2 =     plt.get_cmap('Wistia')(np.linspace(start_color_range, stop_color_range, (len(group7))))
-
-
-    colormap = []
-    bluei = greeni = redi = purplei = orangei = greyi = greyi2 = 0
-    for flair in flair_legend:
-        if flair in group1:
-            colormap.append(cmap_blue[bluei])
-            bluei += 1
-        elif flair in group2:
-            colormap.append(cmap_green[greeni])
-            greeni += 1
-        elif flair in group3:
-            colormap.append(cmap_red[redi])
-            redi += 1
-        elif flair in group4:
-            colormap.append(cmap_purple[purplei])
-            purplei += 1
-        elif flair in group5:
-            colormap.append(cmap_orange[orangei])
-            orangei += 1
-        elif flair in group6:
-            colormap.append(cmap_grey[greyi])
-            greyi += 1
-        elif flair in group7:
-            colormap.append(cmap_grey2[greyi2])
-            greyi2 += 1
-
-    #color_patches = []
-    # for i in range(0, len(unique_flairs)):
-    #     color_patch = mpatches.Patch(color=color[i], label=unique_flairs[i])
-    #     color_patches.append(color_patch)
-
-    plt.style.use('Solarize_Light2')
-    plt.rcParams.update({'figure.autolayout': True})
-    plt.figure(figsize=(25,7))
-
-    days = mdates.MonthLocator()
-
-
-    ax = plt.subplot()
-
-    ax.stackplot(dates_new, y_list, labels=flair_legend, colors=colormap)
-    ax.legend(loc=2, prop={'size': 10}, ncol=6)
-
-    ax.xaxis.set_major_formatter(ticks)
-    ax.xaxis.set_minor_locator(days)
-    ax.xaxis.set_tick_params(labelrotation=0)
-    ax.set_ylim(0)
-
-    plt.title(title)
-    plt.ylabel(label)
-    plt.show()
-
-    plt.savefig("output/total_flair_graph.png")
-    return (upload_image("output/total_flair_graph.png", "F" + hash))
-
-
 class Total_time_graph(object):
 
     color1 = 'red'
@@ -437,6 +274,117 @@ class Total_time_graph(object):
         #plt.show()
 
         plt.savefig("output/total_time_graph.png")
+        plt.close()
         return (upload_image("output/total_time_graph.png", "T" + self.hash))
 
+def total_flair_graph(author, table, date, hash, session):
 
+    scope = 'week'
+    if table == Submissions:
+        metric = 1
+        ylabel = "Number of submissions"
+    else:
+        metric = Submissions.num_komments
+        ylabel = "Number of comments"
+
+    group1 = ['Humor/MaiMai', 'Humor', 'MaiMai', 'Humor/MaiMai ']
+    group2 = ['Interessant', 'Medien', 'Boulevard', 'Gesellschaft']
+    group3 = ['Frage/Diskussion', 'Dienstmeldung', 'TIRADE', 'Meta/Reddit']
+    group4 = ['Politik', 'Nachrichten', 'Nachrichten DE', 'Kriminalität', 'Flüchtlinge', 'US-Politik',
+              'Nachrichten Europa',
+              'Terrorismus', 'Nachrichten Welt', 'Nachrichten A', 'Nachrichten CH', 'Nachrichten Deutschland',
+              'Nachrichten Österreich']
+    group5 = ['Geschichte', 'Wissenschaft&Technik', 'Bildung', 'Umwelt', 'Feuilleton/Kultur', 'Musik', 'Wirtschaft']
+    group6 = ['Essen&Trinken', 'Sport', 'Zocken']
+    group7 = []  # all other flairs
+
+    start_color_range = 0.6
+    stop_color_range = 0.96
+
+    cmap_blue = plt.get_cmap('Blues')(np.linspace(start_color_range, stop_color_range, (len(group1))))
+    cmap_green = plt.get_cmap('Greens')(np.linspace(start_color_range, stop_color_range, (len(group2))))
+    cmap_red = plt.get_cmap('Reds')(np.linspace(start_color_range, stop_color_range, (len(group3))))
+    cmap_purple = plt.get_cmap('Purples')(np.linspace(start_color_range, stop_color_range, (len(group4))))
+    cmap_orange = plt.get_cmap('Oranges')(np.linspace(start_color_range, stop_color_range, (len(group5))))
+    cmap_grey = plt.get_cmap('Greys')(np.linspace(start_color_range, stop_color_range, (len(group6))))
+
+    group1 = {'members': group1, 'color': cmap_blue}
+    group2 = {'members': group2, 'color': cmap_green}
+    group3 = {'members': group3, 'color': cmap_red}
+    group4 = {'members': group4, 'color': cmap_purple}
+    group5 = {'members': group5, 'color': cmap_orange}
+    group6 = {'members': group6, 'color': cmap_grey}
+    groups = [group1, group2, group3, group4, group5, group6]
+    allgroups = []
+    for group in groups:
+        allgroups = allgroups + group['members']
+
+    flairs = result = session.query(distinct(Submissions.flair).label("flair"), func.count(Submissions.id)) \
+        .filter(Submissions.flair != None) \
+        .group_by(Submissions.flair) \
+        .order_by(func.count(Submissions.id).desc()) \
+        .limit(35).all()
+
+    q = [func.date_trunc(scope, Submissions.datum).label("date")]
+    for flair in flairs:
+        flair_modified = str(flair.flair)
+        q.append(func.sum(case([(Submissions.flair == flair_modified, metric)], else_=0)).label(flair_modified))
+
+    s = select(q)
+    s = s.where(and_(Submissions.datum >= date, Submissions.flair != None))
+    s = s.group_by(func.date_trunc(scope, Submissions.datum))
+    s = s.order_by(func.date_trunc(scope, Submissions.datum))
+
+    df = pd.read_sql(s, session.bind, index_col=['date'])
+
+    colormaps = {}
+    cols = []
+    i = 0
+    for group in groups:
+        for column in list(df.columns.values):
+            if column in group['members']:
+                cols.append(column)
+                try:
+                    length = len(colormaps[i])
+                except:
+                    length = 0
+                try:
+                    current = colormaps[i]
+                except:
+                    current = []
+
+                current.append(group['color'][length])
+                colormaps.update({i: current})
+            if column not in allgroups:
+                group7.append(column)
+
+        i += 1
+
+    group7 = list(set(group7))
+    cols += group7
+    colormap = []
+    for keys, value in colormaps.items():
+        colormap = colormap + value
+
+    cmap_grey2 = plt.get_cmap('cool')(np.linspace(start_color_range, stop_color_range, (len(group7))))
+    i = 0
+    for i in range(i, len(group7)):
+        colormap.append(cmap_grey2[i])
+
+    df = df.reindex(columns=cols)
+    df = df.resample('12H')
+    df = df.interpolate(method='cubic', limit_direction='both')
+
+    plt.style.use('ggplot')
+    plt.figure(figsize=(15, 8))
+    plt.stackplot(df.index, df.values.T, labels=df.columns,
+                  colors=colormap)  # .T transposes the values from rows to for each to columns see https://stackoverflow.com/questions/51076766/pandas-and-matplotlib-cant-get-the-stackplot-to-work-with-using-matplotlib-on/51077068#51077068
+    plt.legend(loc=2, prop={'size': 10}, ncol=6)
+    plt.title('Progression of flairs')
+    plt.ylabel(ylabel)
+    plt.ylim(0)
+    plt.tight_layout()
+
+
+    plt.savefig("output/total_flair_graph.png")
+    return (upload_image("output/total_flair_graph.png", "F" + hash))
