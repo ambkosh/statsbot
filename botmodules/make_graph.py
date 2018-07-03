@@ -5,19 +5,20 @@ matplotlib.use('Agg') #turn this off if you want to show the plot
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import matplotlib.patches as mpatches
 import numpy as np
 import pandas as pd
-from scipy.interpolate import interp1d
-
-from sqlalchemy import func, text, cast, Time, and_, distinct, case, select
-
-from botmodules.sqlconnect import make_connection, Submissions, Comments
-from botmodules.upload_image import upload_image
 import datetime
+import logging
+from sqlalchemy import func, and_, distinct, case, select
 
+from botmodules.sqlconnect import Submissions, Comments
+from botmodules.upload_image import upload_image
+from botmodules.log import prepare_logger
 
-def time_graph(author, table, hash, session, date):
+prepare_logger('Graphs')
+logger = logging.getLogger('Graphs')
+
+def time_graph(author, table, date, session):
     """creates the time graph for given user
     Uploads the picture and returns the image link"""
 
@@ -60,7 +61,6 @@ def time_graph(author, table, hash, session, date):
     dates = mdates.DateFormatter('%H:%M')
     weeks = mdates.MonthLocator()
 
-
     plt1 = plt.subplot(2, 1, 1)
     plt1.set_title("Average daily activity")
     plt1.bar(times_day, counts_day, 0.03)
@@ -76,12 +76,17 @@ def time_graph(author, table, hash, session, date):
     plt2.xaxis.set_minor_locator(weeks)
     plt2.set_ylabel('Number of comments\n per week')
 
+    imagepath = "output/time_graph.png"
+    try:
+        plt.savefig(imagepath)
+    except:
+        logger.warn("Author: %s - Could not save image time_graph", author)
+    logger.debug("Author: %s - Saving time_graph image", author)
+    return(imagepath)
+    #return(upload_image("output/time_graph.png", "T"+hash))
 
-    plt.savefig("output/time_graph.png")
-    return(upload_image("output/time_graph.png", "T"+hash))
 
-
-def flair_graph(author, table, hash, session):
+def flair_graph(author, table, date, session):
     """creates the flair graph for given user
     Uploads the picture and returns the image link"""
 
@@ -129,9 +134,14 @@ def flair_graph(author, table, hash, session):
     ax.set_xticklabels(flairs, ha='right')
 
     #plt.show()
-
-    plt.savefig("output/flair_graph.png")
-    return(upload_image("output/flair_graph.png", "F"+hash))
+    imagepath = "output/flair_graph.png"
+    try:
+        plt.savefig(imagepath)
+    except:
+        logger.warn("Author: %s - Could not save image flair_graph", author)
+    logger.debug("Author: %s - Saving flair_graph image", author)
+    return(imagepath)
+    #return(upload_image("output/flair_graph.png", "F"+hash))
 
 
 def total_distribution_graph(table, time, session):
@@ -162,56 +172,56 @@ def total_distribution_graph(table, time, session):
     plt.show()
     return(plt)
 
-class Flair_lists(object):
-    """creates the score lists for each flair"""
-
-    result_dict = {}
-    marked = {}
-
-    def __init__(self, flair, score, datum, unique_flairs):
-        self.flair = flair
-        self.score = score
-        self.date = datum
-        self.uniques = unique_flairs
-
-    def add_value(self, value, flair):
-        """adds values to dictionary"""
-
-        try:
-            current_list = self.result_dict[flair]
-            current_list.append(value)
-            self.result_dict.update({flair: current_list})
-        except KeyError:
-            current_list = [value]
-            self.result_dict.update({flair: current_list})
-
-        return(self.result_dict)
-
-
-    def mark(self):
-        """mark value as added for that day"""
-
-        try:
-            current_list = self.marked[self.date]
-            current_list.append(self.flair)
-            self.marked.update({self.date:current_list})
-        except KeyError:
-            current_list = [self.flair]
-            self.marked.update({self.date:current_list})
-
-
-    def check_mark(self, old_date, last_date):
-        """check if flair is marked for that day, if not add zero to list"""
-
-        if old_date != self.date: #new date, check which flairs are not yet marked
-            for flair in self.uniques:
-                if not flair in self.marked[old_date]: #if true flair is not in marked flairs for time in old_date
-                    self.add_value(0, flair)
-
-        if last_date == "last":
-            for flair in self.uniques:
-                if not flair in self.marked[self.date]: #if true flair is not in marked flairs for time in old_date
-                    self.add_value(0, flair)
+# class Flair_lists(object):
+#     """creates the score lists for each flair"""
+#
+#     result_dict = {}
+#     marked = {}
+#
+#     def __init__(self, flair, score, datum, unique_flairs):
+#         self.flair = flair
+#         self.score = score
+#         self.date = datum
+#         self.uniques = unique_flairs
+#
+#     def add_value(self, value, flair):
+#         """adds values to dictionary"""
+#
+#         try:
+#             current_list = self.result_dict[flair]
+#             current_list.append(value)
+#             self.result_dict.update({flair: current_list})
+#         except KeyError:
+#             current_list = [value]
+#             self.result_dict.update({flair: current_list})
+#
+#         return(self.result_dict)
+#
+#
+#     def mark(self):
+#         """mark value as added for that day"""
+#
+#         try:
+#             current_list = self.marked[self.date]
+#             current_list.append(self.flair)
+#             self.marked.update({self.date:current_list})
+#         except KeyError:
+#             current_list = [self.flair]
+#             self.marked.update({self.date:current_list})
+#
+#
+#     def check_mark(self, old_date, last_date):
+#         """check if flair is marked for that day, if not add zero to list"""
+#
+#         if old_date != self.date: #new date, check which flairs are not yet marked
+#             for flair in self.uniques:
+#                 if not flair in self.marked[old_date]: #if true flair is not in marked flairs for time in old_date
+#                     self.add_value(0, flair)
+#
+#         if last_date == "last":
+#             for flair in self.uniques:
+#                 if not flair in self.marked[self.date]: #if true flair is not in marked flairs for time in old_date
+#                     self.add_value(0, flair)
 
 
 class Total_time_graph(object):
@@ -219,10 +229,9 @@ class Total_time_graph(object):
     color1 = 'red'
     color2 = 'blue'
 
-    def __init__(self, author, table, hash, date):
+    def __init__(self, author, table, date):
         self.author = author
         self.table = table
-        self.hash = hash
         self.date = date
     
     '''The graph for the multiple overview stats called by stats de general'''
@@ -273,11 +282,17 @@ class Total_time_graph(object):
         fig.tight_layout()
         #plt.show()
 
-        plt.savefig("output/total_time_graph.png")
+        imagepath = "output/total_time_graph.png"
+        try:
+            plt.savefig(imagepath)
+        except Exception as e:
+            logger.warn("Author: %s - Failed to save total_time_graph image: %s", self.author, e)
         plt.close()
-        return (upload_image("output/total_time_graph.png", "T" + self.hash))
+        logger.debug("Author: %s - Saving total_time_graph image", self.author)
+        return(imagepath)
+        #return (upload_image("output/total_time_graph.png", "T" + self.hash))
 
-def total_flair_graph(author, table, date, hash, session):
+def total_flair_graph(author, table, date, session):
 
     scope = 'week'
     if table == Submissions:
@@ -385,6 +400,12 @@ def total_flair_graph(author, table, date, hash, session):
     plt.ylim(0)
     plt.tight_layout()
 
+    imagepath = "output/total_flair_graph.png"
+    try:
+        plt.savefig(imagepath)
+    except Exception as e:
+            logger.warn("Author: %s - Failed to save total_flair_graph image: %s", author, e)
 
-    plt.savefig("output/total_flair_graph.png")
-    return (upload_image("output/total_flair_graph.png", "F" + hash))
+    logger.debug("Author: %s - Saved total_flair_graph image", author)
+    return(imagepath)
+    #return (upload_image("output/total_flair_graph.png", "F" + hash))

@@ -1,17 +1,21 @@
 #!/usr/bin/python3.6
 
-from sqlalchemy import func, and_, text, exc
-from docs.conf import prawconfig, connection_string, connection_string_bot  # custom module with praw config
-from botmodules.sqlconnect import make_connection, Submissions, Comments
+import logging
+from sqlalchemy import func, and_, text
 
+from docs.conf import connection_string # custom module with praw config
+from botmodules.sqlconnect import make_connection, Submissions, Comments
+from botmodules.log import prepare_logger
 
 session = make_connection(connection_string)
 
+class Data(object):
+    """Fetches all the data"""
 
-class Sql_Results(object):
-    """Basic Class for SQL results"""
+    prepare_logger('Data')
+    logger = logging.getLogger('Data')
 
-    def __init__(self, date, author, table, scope):
+    def __init__(self, scope, author, table, date):
         self.scope = scope
         self.author = author
         self.table = table
@@ -19,33 +23,22 @@ class Sql_Results(object):
 
         self.query_filter = (and_(self.table.autor == self.author, self.table.datum >= self.date))
 
-    def get_author(self):
-        return self.author
-
-    def get_table(self):
-        return self.table
-
-    def set_author(self, author):
-        self.author = author
-
-    def set_table(self, table):
-        self.table = table
-
     def check_has_data(self, session):
         """checks if requested data returns anything"""
 
         query = session.query(self.table.id).filter(self.query_filter)
-        result = session.query(query.exists()).first()[0]
+        r = session.query(query.exists()).first()[0]
 
-        return(result)
+        self.logger.debug("Author: %s - Returning info if author has no data: %s", self.author, r)
+        return(r)
 
     def get_update_date(self, session):
         """Returns the last datetime the database was updates"""
 
         last_update = session.query(Submissions.datum).order_by(Submissions.datum.desc()).limit(1).first()
 
+        self.logger.debug("Author: %s - Returning last update date: %s", self.author, last_update.datum)
         return (last_update.datum)
-
 
     def get_score_count(self, session):
         """Returns total number of comments and sum of score
@@ -55,6 +48,7 @@ class Sql_Results(object):
             .filter(self.query_filter)\
             .first()
 
+        self.logger.debug("Author: %s - Returning score and count for author", self.author)
         return ({'score': score_comments_total.score, 'count': score_comments_total.comments})
 
     def get_top_flairdomain(self, session, column):
@@ -78,6 +72,7 @@ class Sql_Results(object):
             .order_by(func.count(t1.id).desc()) \
             .first()
 
+        self.logger.debug("Author: %s - Returning top column and top column count for author", self.author)
         return ({'column': top_column.column, 'count': top_column.count})
 
     def get_position(self, session, column):
@@ -107,8 +102,8 @@ class Sql_Results(object):
                       "+window_query+\
                       "where autor = '" + self.author + "'")
 
+        self.logger.debug("Author: %s - Returning position for score and count author", self.author)
         return (session.execute(query).first()['row_number'])
-
 
     def get_top_single(self, session):
         """Returns the postid and title of the top scoring post.
@@ -121,6 +116,7 @@ class Sql_Results(object):
             .order_by(self.table.score.desc()) \
             .limit(1).first()
 
+        self.logger.debug("Author: %s - Returning position for score and count author", self.author)
         return ({'postid': top_post.postid, 'title': top_post.title, 'commentid': top_post.commentid})
 
     def get_top_20(self, session):
@@ -135,47 +131,5 @@ class Sql_Results(object):
         for item in result:
             result_list.append({'author': item.Author, 'score': item.Score, 'count':item.Count})
 
+        self.logger.debug("Author: %s - Returning top 20 list", self.author)
         return(result_list)
-
-
-
-def format_reddit_table(table_data):
-    """Formats data in reddit table format"""
-
-    num_columns = len(table_data[0].keys())
-    num_rows = len(table_data)
-
-    headings = list(table_data[0].keys())
-    headings_formated = []
-    table_align = []
-    table_row = []
-
-    for i in range (0, num_columns):
-        if i != num_columns-1:
-            (lambda x: headings_formated.append(x + " | "))(headings[i])
-        else:
-            headings_formated.append(" " + headings[i] + "\n")
-
-    table = ''.join(headings_formated)
-
-    for i in range (0, num_columns):
-        if i != num_columns-1:
-            table_align.append("--|")
-        else:
-            table_align.append("--" + "\n")
-
-    table += ''.join(table_align)
-
-    for i in range (0, num_rows):
-        table_row = []
-        for j in range(0, num_columns):
-            if j != num_columns-1:
-                table_row.append(str(table_data[i][headings[j]]) + " | ")
-            else:
-                table_row.append(str(table_data[i][headings[j]]) + "\n")
-        table += ''.join(table_row)
-
-    return(table)
-
-# table_data = Sql_Results('2018-1-1', 'amb_kosh', Submissions, 'general').get_top_20(session)
-# print(format_reddit_table(table_data))
