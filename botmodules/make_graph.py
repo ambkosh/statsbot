@@ -11,7 +11,7 @@ import datetime
 import logging
 from sqlalchemy import func, and_, distinct, case, select
 
-from botmodules.sqlconnect import Submissions, Comments
+from botmodules.sqlconnect import Submissions, Comments, get_flair_counts
 from botmodules.upload_image import upload_image
 from botmodules.log import prepare_logger
 
@@ -288,7 +288,7 @@ class Total_time_graph(object):
         except Exception as e:
             logger.warn("Author: %s - Failed to save total_time_graph image: %s", self.author, e)
         plt.close()
-        logger.debug("Author: %s - Saving total_time_graph image", self.author)
+        logger.debug("Author: %s - Saved total_time_graph image", self.author)
         return(imagepath)
         #return (upload_image("output/total_time_graph.png", "T" + self.hash))
 
@@ -334,21 +334,25 @@ def total_flair_graph(author, table, date, session):
     for group in groups:
         allgroups = allgroups + group['members']
 
-    flairs = result = session.query(distinct(Submissions.flair).label("flair"), func.count(Submissions.id)) \
-        .filter(Submissions.flair != None) \
-        .group_by(Submissions.flair) \
-        .order_by(func.count(Submissions.id).desc()) \
-        .limit(35).all()
+    # flairs = result = session.query(distinct(Submissions.flair).label("flair"), func.count(Submissions.id)) \
+    #     .filter(Submissions.flair != None) \
+    #     .group_by(Submissions.flair) \
+    #     .order_by(func.count(Submissions.id).desc()) \
+    #     .limit(35).all()
+    #
+    # q = [func.date_trunc(scope, Submissions.datum).label("date")]
+    # for flair in flairs:
+    #     flair_modified = str(flair.flair)
+    #     q.append(func.sum(case([(Submissions.flair == flair_modified, metric)], else_=0)).label(flair_modified))
+    #
+    # s = select(q)
+    # s = s.where(and_(Submissions.datum >= date, Submissions.flair != None))
+    # s = s.group_by(func.date_trunc(scope, Submissions.datum))
+    # s = s.order_by(func.date_trunc(scope, Submissions.datum))
 
-    q = [func.date_trunc(scope, Submissions.datum).label("date")]
-    for flair in flairs:
-        flair_modified = str(flair.flair)
-        q.append(func.sum(case([(Submissions.flair == flair_modified, metric)], else_=0)).label(flair_modified))
-
-    s = select(q)
-    s = s.where(and_(Submissions.datum >= date, Submissions.flair != None))
-    s = s.group_by(func.date_trunc(scope, Submissions.datum))
-    s = s.order_by(func.date_trunc(scope, Submissions.datum))
+    flair_table = get_flair_counts()
+    s = select(flair_table.c)
+    s = s.where(flair_table.c.date >= date)
 
     df = pd.read_sql(s, session.bind, index_col=['date'])
 
@@ -409,3 +413,7 @@ def total_flair_graph(author, table, date, session):
     logger.debug("Author: %s - Saved total_flair_graph image", author)
     return(imagepath)
     #return (upload_image("output/total_flair_graph.png", "F" + hash))
+
+
+
+

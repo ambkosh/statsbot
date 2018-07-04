@@ -2,15 +2,19 @@
 
 import pytest
 import praw
-from docs.conf import prawconfig
-from bot_rewrite import Reddit_Comment
-from botmodules.sqlconnect import Comments, Submissions, make_connection
-from botmodules.sqlconnectbot import Calls, make_connection_bot
-from botmodules.sqldata import Data
-from docs.conf import connection_string, connection_string_bot
 from datetime import datetime
 from hypothesis import given, example, assume
 from hypothesis.strategies import text
+
+from docs.conf import prawconfig
+from bot import Reddit_Comment
+from botmodules.sqlconnect import Comments, Submissions, make_connection
+from botmodules.sqlconnectbot import Calls, make_connection_bot
+from botmodules.sqldata import Data
+from botmodules.make_graph import total_flair_graph
+from docs.conf import connection_string, connection_string_bot
+
+
 
 reddit = praw.Reddit(client_id=prawconfig['client_id'],
                      client_secret=prawconfig['client_secret'],
@@ -86,6 +90,13 @@ def test_get_score_count(date, author, table, scope, expected_score, expected_co
     r = d.get_score_count(session)
     assert r['score'] == expected_score
     assert r['count'] == expected_count
+
+@pytest.mark.parametrize("author, table, date, session, expected",[
+    ('amb_kosh', Comments,  '2017-1-1', session, 'output/total_flair_graph.png')
+])
+def test_total_flair_graph(author, table, date, session, expected):
+    g = total_flair_graph(author, table, date, session)
+    assert g == expected
 
 # @given(s1=text(), s2=text())
 # def test_check_body_isdict(s1, s2):

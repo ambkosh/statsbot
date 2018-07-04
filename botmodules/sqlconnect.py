@@ -2,13 +2,14 @@
 #!/usr/bin/env python
 
 
-from sqlalchemy import create_engine, Column, String, Integer, DateTime, Boolean, BigInteger, func, Date, and_, funcfilter, ForeignKey, TEXT, distinct
+from sqlalchemy import create_engine, Column, String, Integer, DateTime, Boolean, BigInteger, and_, ForeignKey, TEXT, MetaData, Table
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+from docs.conf import connection_string
 
 
 Base = declarative_base()
-
+engine = create_engine(connection_string)
 
 class Submissions(Base):
 
@@ -102,6 +103,17 @@ class Submissions_Counts_2018(Base): #materialized view
     pos_count       = Column(BigInteger)
     pos_sum         = Column(BigInteger)
 
+
+
+
+def get_flair_counts():
+
+    metadata = MetaData()
+    metadata.bind = engine
+
+    Flair_Counts = Table('flair_counts', metadata, autoload=True)
+
+    return(Flair_Counts)
 
 def make_connection(connection_string):
     """makes the connection to the postgres-server"""
