@@ -26,8 +26,7 @@ session = make_connection(connection_string)
 session_bot = make_connection_bot(connection_string_bot)
 
 
-testmode = True
-footer = "Bugs? Wünsche? Sonstiges Feedback? Schreib eine Nachricht an meinen Meister: [amb_kosh](https://www.reddit.com/message/compose/?to=amb_kosh)"
+testmode = False
 date = '2015-5-1'
 last_update = ''
 
@@ -167,6 +166,9 @@ class Message(object):
 
     def get_message(self):
 
+        seperator = "\n\n-------\n\n"
+        newline = "\n\n"
+
         if not self.d.check_has_data(session):
             return("No Data found for selection (Maybe try an older date).")
 
@@ -174,8 +176,9 @@ class Message(object):
             header = self.get_header()
             table = self.get_table()
             graphs = self.get_graphs()
+            footer = self.get_footer()
 
-            message = table + graphs
+            message = table + graphs + seperator + footer
 
         return message
 
@@ -282,6 +285,18 @@ class Message(object):
     def get_header(self):
             pass
 
+    def get_footer(self):
+
+        last_update = self.d.get_update_date(session)
+        last_update = get_small_text("Daten bis: " + str(last_update))
+        footer = "Bugs? Wünsche? Sonstiges Feedback? Schreib eine Nachricht an meinen Meister: [amb_kosh](https://www.reddit.com/message/compose/?to=amb_kosh)"
+        footer = get_small_text(footer)
+        footer = last_update + footer
+
+        mainlog.debug("ID: %s Author: %s - Returning footer", comment.id, comment.author.name)
+        return(footer)
+
+
 
 
 def format_reddit_table(table_data):
@@ -355,6 +370,14 @@ def mark_hash_as_uploaded(hash):
     except:
         mainlog.warn("ID: %s Author: %s - Unexpected error while trying to mark hash as read: %s", comment.id, comment.author.name, sys.exc_info()[0])
 
+def get_small_text(message):
+    """formats input string with ^ for small text in reddit"""
+
+    words = message.split()
+    words_transformed = list(map(lambda x: " ^^" + x, words))
+    words_together = "".join(words_transformed)
+    mainlog.debug("ID: %s - Author: %s - Returning small_text message", comment.id, comment.author.name)
+    return(words_together)
 
 if __name__ == "__main__":
 
@@ -377,7 +400,7 @@ if __name__ == "__main__":
 
             m = Message(scope, author, table, date).get_message()
             mainlog.info("ID: %s - Author: %s - replying", comment.id, comment.author.name)
-            mainlog.info("ID: %s - Author: %s - replying with: %s", comment.id, comment.author.name, m)
+            mainlog.debug("ID: %s - Author: %s - replying with: %s", comment.id, comment.author.name, m)
             if not testmode: comment.reply(m)
             c.mark_as_replied()
             mainlog.debug("ID: %s - Author: %s - marked as replied to", comment.id, comment.author.name)
