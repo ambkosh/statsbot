@@ -4,7 +4,7 @@ import logging
 from sqlalchemy import func, and_, text
 
 from docs.conf import connection_string # custom module with praw config
-from botmodules.sqlconnect import make_connection, Submissions, Comments
+from botmodules.sqlconnect import make_connection, Submissions, Comments, Submissions_Counts, Comments_Counts, Submissions_Counts_2018, Comments_Counts_2018
 from botmodules.log import prepare_logger
 
 session = make_connection(connection_string)
@@ -75,35 +75,54 @@ class Data(object):
         self.logger.debug("Author: %s - Returning top column and top column count for author", self.author)
         return ({'column': top_column.column, 'count': top_column.count})
 
-    def get_position(self, session, column):
-        """returns the position for score or number of comments"""
+    # def get_position(self, session, column):
+    #     """returns the position for score or number of comments"""
+    #
+    #     self.date = str(self.date)
+    #
+    #     if self.table == Submissions:
+    #         table_text = 'submissionslarge' #need to make it string for execution it as text
+    #     else:
+    #         table_text = 'comments'
+    #
+    #     if column == 'score':
+    #         window_query = "(select autor, count(id), row_number () over(order by sum(score) desc) \
+    #         	    from " + table_text + " \
+    #                 where datum >='" + self.date + "' \
+    #                 group by autor \
+    #         	    order by sum(score) desc ) row " #that space at the end is important
+    #     else:
+    #         window_query = "(select autor, count(id), row_number () over(order by count(id) desc) \
+    #         	    from " + table_text + " \
+    #                 where datum >='" + self.date + "' \
+    #                 group by autor \
+    #         	    order by count(id) desc ) row " #that space at the end is important
+    #
+    #     query = text("select row_number from \
+    #                   "+window_query+\
+    #                   "where autor = '" + self.author + "'")
+    #
+    #     self.logger.debug("Author: %s - Returning position for score and count author", self.author)
+    #     return (session.execute(query).first()['row_number'])
 
-        self.date = str(self.date)
+    def get_position(self, session):
 
         if self.table == Submissions:
-            table_text = 'submissionslarge' #need to make it string for execution it as text
-        else:
-            table_text = 'comments'
+            query_table = Submissions_Counts
+            query_table2018 = Submissions_Counts_2018
+        if self.table == Comments:
+            query_table = Comments_Counts
+            query_table2018 = Comments_Counts_2018
 
-        if column == 'score':
-            window_query = "(select autor, count(id), row_number () over(order by sum(score) desc) \
-            	    from " + table_text + " \
-                    where datum >='" + self.date + "' \
-                    group by autor \
-            	    order by sum(score) desc ) row " #that space at the end is important
-        else:
-            window_query = "(select autor, count(id), row_number () over(order by count(id) desc) \
-            	    from " + table_text + " \
-                    where datum >='" + self.date + "' \
-                    group by autor \
-            	    order by count(id) desc ) row " #that space at the end is important
+        r = session.query(query_table.pos_count, query_table.pos_sum)\
+                    .filter(query_table.autor == self.author).first()
 
-        query = text("select row_number from \
-                      "+window_query+\
-                      "where autor = '" + self.author + "'")
+        r2018 = session.query(query_table2018.pos_count, query_table2018.pos_sum)\
+                    .filter(query_table2018.autor == self.author).first()
 
-        self.logger.debug("Author: %s - Returning position for score and count author", self.author)
-        return (session.execute(query).first()['row_number'])
+        r = {'count': r.pos_count, 'score': r.pos_sum, 'count2018': r2018.pos_count, 'score2018': r2018.pos_sum}
+
+        return(r)
 
     def get_top_single(self, session):
         """Returns the postid and title of the top scoring post.
@@ -133,3 +152,5 @@ class Data(object):
 
         self.logger.debug("Author: %s - Returning top 20 list", self.author)
         return(result_list)
+
+

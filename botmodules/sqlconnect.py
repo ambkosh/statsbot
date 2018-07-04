@@ -2,7 +2,7 @@
 #!/usr/bin/env python
 
 
-from sqlalchemy import create_engine, Column, String, Integer, DateTime, Boolean, func, Date, and_, funcfilter, ForeignKey, TEXT, distinct
+from sqlalchemy import create_engine, Column, String, Integer, DateTime, Boolean, BigInteger, func, Date, and_, funcfilter, ForeignKey, TEXT, distinct
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -58,35 +58,49 @@ class Comments(Base):
     parentid        = Column(String(10))
     isroot          = Column(Boolean)
 
-# class Joined(Base):
-#
-#     __tablename__ = 'joined'
-#
-#     id              = Column(Integer, primary_key=True)
-#     commentid       = Column(String(10), nullable=False, unique=True)
-#     postid          = Column(String(10), ForeignKey("submissionslarge.postid"), nullable=False)
-#     subredditid     = Column(String(10), nullable=False)
-#     autor           = Column(String(250))
-#     body            = Column(TEXT(convert_unicode=True))
-#     score           = Column(Integer)
-#     subredditname   = Column(String(200))
-#     datum           = Column(DateTime)
-#     autorflair      = Column(String(200))
-#     datumtag        = Column(DateTime)
-#     gilded          = Column(Integer)
-#     ups             = Column(Integer)
-#     downs           = Column(Integer)
-#     controversiality= Column(Integer)
-#     depth           = Column(Integer)
-#     replies         = Column(Integer)
-#     parentid        = Column(String(10))
-#     isroot          = Column(Boolean)
-#     flair       = Column(String(250))
-#     num_komments= Column(Integer)
-#     domain      = Column(String(250))
-#     over18      = Column(Boolean)
-#     title       = Column(String(2000))
+class Comments_Counts(Base): #materialized view
 
+    __tablename__ = 'comment_counts'
+
+    id              = Column(Integer, primary_key=True)
+    autor           = Column(String(250))
+    count           = Column(BigInteger)
+    sum             = Column(BigInteger)
+    pos_count       = Column(BigInteger)
+    pos_sum         = Column(BigInteger)
+
+class Submissions_Counts(Base): #materialized view
+
+    __tablename__ = 'submission_counts'
+
+    id              = Column(Integer, primary_key=True)
+    autor           = Column(String(250))
+    count           = Column(BigInteger)
+    sum             = Column(BigInteger)
+    pos_count       = Column(BigInteger)
+    pos_sum         = Column(BigInteger)
+
+class Comments_Counts_2018(Base): #materialized view
+
+    __tablename__ = 'comment_counts_2018'
+
+    id              = Column(Integer, primary_key=True)
+    autor           = Column(String(250))
+    count           = Column(BigInteger)
+    sum             = Column(BigInteger)
+    pos_count       = Column(BigInteger)
+    pos_sum         = Column(BigInteger)
+
+class Submissions_Counts_2018(Base): #materialized view
+
+    __tablename__ = 'submission_counts_2018'
+
+    id              = Column(Integer, primary_key=True)
+    autor           = Column(String(250))
+    count           = Column(BigInteger)
+    sum             = Column(BigInteger)
+    pos_count       = Column(BigInteger)
+    pos_sum         = Column(BigInteger)
 
 
 def make_connection(connection_string):
@@ -96,4 +110,6 @@ def make_connection(connection_string):
     Session = sessionmaker(bind=engine)
     session = Session()
     return session
+
+
 

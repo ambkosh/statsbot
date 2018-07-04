@@ -187,9 +187,11 @@ class Message(object):
         if self.scope == 'user':
 
             score           = str(self.d.get_score_count(session)['score'])
-            pos_score       = str(self.d.get_position(session, 'score'))
+            pos_score       = str(self.d.get_position(session)['score'])
+            pos_score_2018       = str(self.d.get_position(session)['score2018'])
             count           = str(self.d.get_score_count(session)['count'])
-            pos_count       = str(self.d.get_position(session, 'count'))
+            pos_count       = str(self.d.get_position(session)['count'])
+            pos_count_2018       = str(self.d.get_position(session)['count2018'])
             top_flair       = self.d.get_top_flairdomain(session, Submissions.flair)['column']
             top_domain      = self.d.get_top_flairdomain(session, Submissions.domain)['column']
             top_post_id     = self.d.get_top_single(session)['postid']
@@ -205,9 +207,9 @@ class Message(object):
                 heading_plural = "Kommentare"
                 perma_link = "[" + top_post_id + "]" + "(https://reddit.com/r/de/comments/" + top_post_id + "/topic/" + top_comment_id + ")"
 
-            table_data = "Score | " + heading_plural + " | Top-Flair | Top-Domain | Bester " + heading
-            table_data = table_data + "\n---|---|---|---|---"
-            table_data = table_data + "\n" + score + " (Pos.: " + pos_score + ")  | " + count + " (Pos.: " + pos_count + ")  | " + top_flair + " | " + top_domain + " | " + perma_link
+            table_data = "Score | " + heading_plural + " | Top-Flair | Top-Domain | Bester " + heading + " | Pos. Score | Pos. " + heading_plural
+            table_data = table_data + "\n---|---|---|---|---|---|---"
+            table_data = table_data + "\n" + score + " | " + count + "  | " + top_flair + " | " + top_domain + " | " + perma_link + " | " + pos_score + " (2018: " + pos_score_2018 + ") | " + pos_count + " (2018: " + pos_count_2018 +")"
 
             self.logger.debug("Author: %s - Returning table data for author", self.author)
             return (table_data)
