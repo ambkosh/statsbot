@@ -39,7 +39,7 @@ class Reddit_Comment:
 
     def __init__(self, comment):
         try:
-            self.body = comment.body
+            self.body = comment.body.lower().strip()
             self.commentid = comment.id
         except AttributeError:
             self.logger.warn("praw comment did not contain body or commentid")
