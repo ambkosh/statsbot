@@ -82,6 +82,7 @@ def time_graph(author, table, date, session):
     except:
         logger.warn("Author: %s - Could not save image time_graph", author)
     logger.debug("Author: %s - Saving time_graph image", author)
+    plt.close('all')
     return(imagepath)
     #return(upload_image("output/time_graph.png", "T"+hash))
 
