@@ -393,7 +393,7 @@ if __name__ == "__main__":
         c = Reddit_Comment(comment)
         body_params = c.check_body()
 
-        if not c.check_already_replied() and body_params:
+        if body_params and not c.check_already_replied():
 
             scope = body_params['scope']
             author = body_params['author']
