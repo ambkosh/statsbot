@@ -24,6 +24,7 @@ def time_graph(author, table, date, session):
 
     # data for activity per hour in a day
 
+    logger.debug("Author: %s - Preparing time_graph", author)
 
     result_day = session.query(func.date_part('hour', table.datum).label("time"), func.count(table.id).label("count"))\
         .filter(and_(table.autor == author, table.datum >= date))\
@@ -92,6 +93,8 @@ def time_graph(author, table, date, session):
 def flair_graph(author, table, date, session):
     """creates the flair graph for given user
     Uploads the picture and returns the image link"""
+
+    logger.debug("Author: %s - Preparing flair_graph", author)
 
     if table == Comments:
         result = session.query(func.count(Comments.id).label("count"), Submissions.flair)\

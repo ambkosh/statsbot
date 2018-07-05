@@ -13,6 +13,6 @@ def prepare_logger(name):
     l.addHandler(ch)
 
     file_logger_bot = logging.FileHandler('bot.log', encoding='UTF8')
-    file_logger_bot.setLevel(logging.DEBUG)
+    file_logger_bot.setLevel(logging.WARN)
     file_logger_bot.setFormatter(formatter)
     l.addHandler(file_logger_bot)

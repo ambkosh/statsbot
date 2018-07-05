@@ -408,4 +408,6 @@ if __name__ == "__main__":
             if not testmode: comment.reply(m)
             c.mark_as_replied()
             mainlog.debug("ID: %s - Author: %s - marked as replied to", comment.id, comment.author.name)
+            session.close()
+
 
