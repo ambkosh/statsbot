@@ -7,15 +7,19 @@ from docs.conf import cloudinary_conf
 from botmodules.log import prepare_logger
 
 
-cloudinary.config(cloud_name = cloudinary_conf['cloud_name'],
-  api_key = cloudinary_conf['api_key'],
-  api_secret = cloudinary_conf['api_secret'])
+# cloudinary.config(cloud_name = cloudinary_conf['cloud_name'],
+#   api_key = cloudinary_conf['api_key'],
+#   api_secret = cloudinary_conf['api_secret'])
 
 prepare_logger('upload_image')
 logger = logging.getLogger('upload_image')
 
 def upload_image(image, hash):
     """Takes a path to an image an uploads it. Return the Image URL"""
+
+    cloudinary.config(cloud_name=cloudinary_conf['cloud_name'],
+                      api_key=cloudinary_conf['api_key'],
+                      api_secret=cloudinary_conf['api_secret'])
 
     try:
         result = cloudinary.uploader.upload(image, public_id = hash)
