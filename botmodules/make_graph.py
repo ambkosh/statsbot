@@ -58,6 +58,8 @@ def time_graph(author, table, date, session):
 
     plt.style.use('ggplot')
     plt.rcParams.update({'figure.autolayout': True})
+    plt.figure(figsize=(8, 5))
+    plt.tight_layout()
 
     dates = mdates.DateFormatter('%H:%M')
     weeks = mdates.MonthLocator()
