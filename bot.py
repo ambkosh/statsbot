@@ -269,7 +269,7 @@ class Message(object):
             if self.scope == 'user':
 
                 URL_time_graph = "http://res.cloudinary.com/destats/image/upload/T" + hash  # return the old image path
-                URL_flair_graph = "http://res.cloudinary.com/destats/image/upload/T" + hash  # return the old image path
+                URL_flair_graph = "http://res.cloudinary.com/destats/image/upload/F" + hash  # return the old image path
 
                 time_text = "\n\n" + "[Verteilung nach Aktivität](" + URL_time_graph + ")"
                 flair_text = "\n\n" + "[Verteilung nach Flair](" + URL_flair_graph + ")"
