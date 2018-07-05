@@ -79,13 +79,13 @@ def time_graph(author, table, date, session):
     plt2.xaxis.set_minor_locator(weeks)
     plt2.set_ylabel('Number of comments\n per week')
 
-    imagepath = "output/time_graph.png"
+    timeimagepath = "output/time_graph.png"
     try:
-        plt.savefig(imagepath)
+        plt.savefig(timeimagepath)
     except:
         logger.warn("Author: %s - Could not save image time_graph", author)
     logger.debug("Author: %s - Saving time_graph image", author)
-    return(imagepath)
+    return(timeimagepath)
     #return(upload_image("output/time_graph.png", "T"+hash))
 
 
@@ -137,13 +137,13 @@ def flair_graph(author, table, date, session):
     ax.set_xticklabels(flairs, ha='right')
 
     #plt.show()
-    imagepath = "output/flair_graph.png"
+    flairimagepath = "output/flair_graph.png"
     try:
-        plt.savefig(imagepath)
+        plt.savefig(flairimagepath)
     except:
         logger.warn("Author: %s - Could not save image flair_graph", author)
     logger.debug("Author: %s - Saving flair_graph image", author)
-    return(imagepath)
+    return(flairimagepath)
     #return(upload_image("output/flair_graph.png", "F"+hash))
 
 
