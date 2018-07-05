@@ -388,7 +388,7 @@ if __name__ == "__main__":
     prepare_logger('mainloop')
     mainlog = logging.getLogger('mainloop')
 
-    for comment in reddit.subreddit('rdebottest').stream.comments():
+    for comment in reddit.subreddit(subreddit).stream.comments():
 
         c = Reddit_Comment(comment)
         body_params = c.check_body()
