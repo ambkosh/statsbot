@@ -20,7 +20,9 @@ reddit = praw.Reddit(client_id=prawconfig['client_id'],
                      user_agent=prawconfig['user_agent'],
                      username=prawconfig['username'])
 
-rde = reddit.subreddit('rdebottest')
+subreddit = prawconfig['subreddit']
+
+rde = reddit.subreddit(subreddit)
 
 session = make_connection(connection_string)
 session_bot = make_connection_bot(connection_string_bot)
