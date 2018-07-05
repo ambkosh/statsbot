@@ -344,7 +344,7 @@ def format_reddit_table(table_data):
 
 def get_hash():
 
-    to_string = comment.body + str(Data('','',Submissions,'').get_update_date(session))
+    to_string = comment.author.name + comment.body + str(Data('','',Submissions,'').get_update_date(session))
     m = hashlib.md5(to_string.encode('utf-8')).hexdigest()
 
     mainlog.debug("ID: %s Author: %s - returning hash", comment.id, comment.author.name)
