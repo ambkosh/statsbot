@@ -34,7 +34,7 @@ def time_graph(author, table, date, session):
 
     for item in result_day:
 
-        times_day.append(datetime.datetime.combine(datetime.date(2000, 1, 1), datetime.time(int(item.time), 0, 0))) #200,1,1 is a random day. won't be show in the end
+        times_day.append(datetime.datetime.combine(datetime.date(1900, 1, 1), datetime.time(int(item.time), 0, 0))) #200,1,1 is a random day. won't be show in the end
         counts_day.append(item.count)
 
     # data for activity graph all time
@@ -45,7 +45,8 @@ def time_graph(author, table, date, session):
 
     result_all_time = session.query(func.date_trunc('week', table.datum).label("time"), func.count(table.id).label("count"))\
         .filter(and_(table.autor == author, table.datum >= date))\
-        .group_by(func.date_trunc('week', table.datum))
+        .group_by(func.date_trunc('week', table.datum))\
+        .order_by(func.date_trunc('week', table.datum))
 
     for item in result_all_time:
 
