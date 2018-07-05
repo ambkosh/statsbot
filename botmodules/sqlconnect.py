@@ -103,7 +103,23 @@ class Submissions_Counts_2018(Base): #materialized view
     pos_count       = Column(BigInteger)
     pos_sum         = Column(BigInteger)
 
+class Comments_Total (Base): #materialized view
 
+    __tablename__ = 'comment_total_counts'
+
+    id              = Column(Integer, primary_key=True)
+    count           = Column(String(250))
+    score           = Column(BigInteger)
+    date             = Column(DateTime)
+
+class Submissions_Total (Base): #materialized view
+
+    __tablename__ = 'submission_total_counts'
+
+    id              = Column(Integer, primary_key=True)
+    count           = Column(String(250))
+    score           = Column(BigInteger)
+    date             = Column(DateTime)
 
 
 def get_flair_counts():

@@ -11,7 +11,7 @@ import datetime
 import logging
 from sqlalchemy import func, and_, distinct, case, select
 
-from botmodules.sqlconnect import Submissions, Comments, get_flair_counts
+from botmodules.sqlconnect import Submissions, Comments, get_flair_counts, Comments_Total, Submissions_Total
 from botmodules.upload_image import upload_image
 from botmodules.log import prepare_logger
 
@@ -252,17 +252,25 @@ class Total_time_graph(object):
 
     def make_graph(self, session):
 
-        subs_query = session.query(func.count(Submissions.score).label("Posts count"), func.sum(Submissions.score).label("Posts score"),\
-                                   func.date_trunc('week', Submissions.datum).label("date")) \
-            .group_by(func.date_trunc('week', Submissions.datum)) \
-            .having(func.date_trunc('week', Submissions.datum) > self.date)\
-            .statement
+        # subs_query = session.query(func.count(Submissions.score).label("Posts count"), func.sum(Submissions.score).label("Posts score"),\
+        #                            func.date_trunc('week', Submissions.datum).label("date")) \
+        #     .group_by(func.date_trunc('week', Submissions.datum)) \
+        #     .having(func.date_trunc('week', Submissions.datum) > self.date)\
+        #     .statement
 
-        comments_query = session.query(func.count(Comments.score).label("Comments count"), func.sum(Comments.score).label("Comments score"),\
-                                   func.date_trunc('week', Comments.datum).label("date")) \
-            .group_by(func.date_trunc('week', Comments.datum)) \
-            .having(func.date_trunc('week', Comments.datum) > self.date)\
-            .statement
+        # comments_query = session.query(func.count(Comments.score).label("Comments count"), func.sum(Comments.score).label("Comments score"),\
+        #                            func.date_trunc('week', Comments.datum).label("date")) \
+        #     .group_by(func.date_trunc('week', Comments.datum)) \
+        #     .having(func.date_trunc('week', Comments.datum) > self.date)\
+        #     .statement
+
+        subs_query = session.query(Submissions_Total.date, Submissions_Total.score.label("Posts score"), Submissions_Total.count.label("Posts count"))\
+                        .filter(Submissions_Total.date >= self.date)\
+                        .statement
+
+        comments_query = session.query(Comments_Total.date, Comments_Total.score.label("Comments score"), Comments_Total.count.label("Comments count"))\
+                        .filter(Comments_Total.date >= self.date)\
+                        .statement
 
         df1 = pd.read_sql(comments_query, session.bind, index_col=['date'])
         df2 = pd.read_sql(subs_query, session.bind, index_col=['date'])
