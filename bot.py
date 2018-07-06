@@ -238,10 +238,10 @@ class Message(object):
             if self.scope == 'user':
 
                 time_image_path = time_graph(self.author, self.table, self.date, session)
-                URL_time_graph = upload_image(time_image_path, "T"+hash)
+                URL_time_graph = upload_image(time_image_path, "T"+hash, 0)
 
                 flair_image_path = flair_graph(self.author, self.table, self.date, session)
-                URL_flair_graph = upload_image(flair_image_path, "F"+hash)
+                URL_flair_graph = upload_image(flair_image_path, "F"+hash, 0)
 
                 mark_hash_as_uploaded(hash)
 
@@ -253,10 +253,10 @@ class Message(object):
             if self.scope == 'general':
 
                 time_image_path = Total_time_graph(self.author, self.table, self.date).make_graph(session)
-                URL_time_graph = upload_image(time_image_path, "T"+hash)
+                URL_time_graph = upload_image(time_image_path, "T"+hash, 0)
 
                 flair_image_path = total_flair_graph(self.author, self.table, self.date, session)
-                URL_flair_graph = upload_image(flair_image_path, "F"+hash)
+                URL_flair_graph = upload_image(flair_image_path, "F"+hash, 0)
                 mark_hash_as_uploaded(hash)
 
                 time_text = "\n\n" + "[Entwicklung von Score und Anzahl Posts, Kommentaren nach Zeit](" + URL_time_graph + ")"

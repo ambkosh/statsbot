@@ -14,8 +14,10 @@ from botmodules.log import prepare_logger
 prepare_logger('upload_image')
 logger = logging.getLogger('upload_image')
 
-def upload_image(image, hash):
+
+def upload_image(image, hash, count):
     """Takes a path to an image an uploads it. Return the Image URL"""
+
 
     cloudinary.config(cloud_name=cloudinary_conf['cloud_name'],
                       api_key=cloudinary_conf['api_key'],
@@ -28,4 +30,8 @@ def upload_image(image, hash):
     except cloudinary.api.Error as e:
         logger.warn("Failed to upload image: %s", e)
         URL = "http://res.cloudinary.com/destats/image/upload/" + hash
+        if count > 3:
+            count += 1
+            logger.info("Retrying image count %s for image: %s", count, image)
+            upload_image(image, hash, count)
     return(URL)
